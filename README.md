@@ -23,7 +23,7 @@ As decisões (estados) e os seus pesos foram programados da seguinte maneira:
 
 O objetivo nesse estado é caminhar pelo mapa em lugares ainda não explorados, para conseguir obter mais informações.
 
-**Peso**:
+**Cálculo do peso**:
 ```text
 1 - peso(Coletar)
 ```
@@ -32,7 +32,7 @@ O objetivo nesse estado é caminhar pelo mapa em lugares ainda não explorados, 
 
 O objetivo nesse estado é atacar (e se possível, perseguir) um inimigo.
 
-**Peso**:
+**Cálculo do peso**:
 ```text
 1 - peso(fugir)
 ```
@@ -41,7 +41,7 @@ O objetivo nesse estado é atacar (e se possível, perseguir) um inimigo.
 
 O objetivo nesse estado é andar em direção ao *powerup* mais próximo de uma maneira um pouco aleatória.
 
-**Peso**:
+**Cálculo do peso**:
 ```text
 (0.5 + 0.5 * (energiaMinha - energiaInimigo) / 100 ) * energiaMinha / 100
 ```
@@ -52,7 +52,7 @@ O objetivo nesse estado é chegar em um *powerup* da maneira mais rápida possí
 
 Nesse caso, será utilizado o *A\** , que fornece o menor caminho até o *powerup* mais próximo que estiver disponível.
 
-**Peso**: 
+**Cálculo do peso**: 
 ```text
 1                           quando Energia < 30
 1 - (Energia - 30) / 40     quando 30 < Energia < 70 
@@ -63,7 +63,7 @@ Nesse caso, será utilizado o *A\** , que fornece o menor caminho até o *poweru
 
 O objetivo nesse estado é coletar algum ouro, seja na própria posição do drone, ou em alguma posição distante.
 
-**Peso**:
+**Cálculo do peso**:
 ```text
 1                           quando está na posição do ouro
 
