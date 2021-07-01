@@ -1,11 +1,11 @@
 package main;
 
-import INF1771_GameClient.Socket.*;
+import control.Bot;
 
 public class Main {
 
     public static void main(String[] args) {
-	// write your code here
+	Bot bot = new Bot();
 
     }
 }

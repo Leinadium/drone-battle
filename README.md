@@ -40,6 +40,7 @@ O objetivo nesse estado é atacar (e se possível, perseguir) um inimigo.
 ### Fugir
 
 O objetivo nesse estado é andar em direção ao *powerup* mais próximo de uma maneira um pouco aleatória.
+Ele fica nesse estado por 10 ticks (1 tick = 1 ação tomada)
 
 **Cálculo do peso**:
 ```text
@@ -65,13 +66,14 @@ O objetivo nesse estado é coletar algum ouro, seja na própria posição do dro
 
 **Cálculo do peso**:
 ```text
-1                           quando está na posição do ouro
+quando está na posição do ouro: 1                           
+em outros casos:
 
-media de 
-(2/pi * 0.5 * arctan(distancia - tempo) + 0.5)
+media de (2/pi * 0.5 * arctan(distancia - tempo) + 0.5)
 para cada posição de ouro conhecida, onde
     distancia = distancia do drone até o ouro
     tempo = em quanto tempo o ouro renasce
+
 ```
 
 Cada peso varia de 0 até 1. Dentre todos os estados, é escolhido executar as ações do estado com melhor peso.

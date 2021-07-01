@@ -23,26 +23,21 @@ public class GameListener implements CommandListener {
      * @param observations String na forma "obs,obs,obs,obs...obs,"
      */
     private void parseObservations(String observations) {
-        if (observations.trim().equals("")) {
-            this.bot.ultimaObservacao = null;
-            return;
-        }
         // limpa as ultimas observacoes
-        this.bot.ultimaObservacao.clear();
+
+        if (observations.trim().equals("")) { return; }
 
         // cria uma lista contendo a string de cada observacao
         String[] lista = observations.trim().split(",");
         // adiciona cada observacao de acordo com o nome no enum
         for (String o: lista) {
-            switch (o) {
-                case "blocked" -> this.bot.ultimaObservacao.add(Observation.PAREDE);
-                case "steps" -> this.bot.ultimaObservacao.add(Observation.INIMIGO);
-                case "breeze" -> this.bot.ultimaObservacao.add(Observation.BURACO);
-                case "flash" -> this.bot.ultimaObservacao.add(Observation.FLASH);
-                case "bluelight" -> this.bot.ultimaObservacao.add(Observation.TESOURO);
-                case "redlight" -> this.bot.ultimaObservacao.add(Observation.POWERUP);
-                case "weaklight" -> this.bot.ultimaObservacao.add(Observation.LUZFRACA);
-            }
+            if (o.equals("blocked")) { this.bot.ultimaObservacao.add(Observation.PAREDE); }
+            if (o.equals("steps")) { this.bot.ultimaObservacao.add(Observation.INIMIGO); }
+            if (o.equals("breeze")) { this.bot.ultimaObservacao.add(Observation.BURACO); }
+            if (o.equals("flash")) { this.bot.ultimaObservacao.add(Observation.FLASH); }
+            if (o.equals("blueLight")) { this.bot.ultimaObservacao.add(Observation.TESOURO); }
+            if (o.equals("redLight")) { this.bot.ultimaObservacao.add(Observation.POWERUP); }
+            if (o.equals("weaklight")) { this.bot.ultimaObservacao.add(Observation.LUZFRACA); }
         }
     }
 

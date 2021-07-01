@@ -24,7 +24,7 @@ public class Log {
         for (int i = indiceAtual; i < lista.size(); i ++) {
             System.out.println(lista.get(i));
         }
-        indiceAtual = lista.size() - 1;
+        indiceAtual = lista.size();
     }
 
     public void dump() {

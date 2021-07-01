@@ -9,13 +9,9 @@ import java.util.ArrayList;
 public interface IBot {
     int getX();
     int getY();
-    long getScore();
-    long getEnergy();
-    long getTime();
+    // long getScore();
+    int getEnergy();
+    int getTick();
     PlayerInfo.Direction getDir();
     ArrayList<Observation> getUltimaObservacao();
-    void setFilaAcoes(ArrayList<Action> filaAcoes);
-
-
-
 }

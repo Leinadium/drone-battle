@@ -11,6 +11,9 @@ import control.server.ConnectionListener;
 import control.server.GameListener;
 import control.server.Sender;
 
+import graphics.View;
+
+import javax.swing.*;
 import java.util.*;
 
 public class Bot implements Runnable, IBot {
@@ -22,16 +25,18 @@ public class Bot implements Runnable, IBot {
     public Sender sender;                                   // envio de mensagens
     public long time;                                       // tempo decorrido
     public ArrayList<Observation> ultimaObservacao;         // observacao do bot
-    public ArrayList<Action> filaAcoes;                     // acoes a serem tomadas
 
     public AI ai;
 
     public int x;
     public int y;
+    public int tick;
     public PlayerInfo.Direction dir;
     public PlayerInfo.State state;
     public long score;
     public int energy;
+
+    public JFrame tela;
 
     private void config() {
         this.client = new HandleClient();
@@ -45,7 +50,6 @@ public class Bot implements Runnable, IBot {
         this.listaDisparos = new ArrayList<>();
         this.listaScores = new ArrayList<>();
         this.ultimaObservacao = new ArrayList<>();
-        this.filaAcoes = new ArrayList<>();
 
         this.time = 0;
 
@@ -57,9 +61,11 @@ public class Bot implements Runnable, IBot {
 
         // inicia a conexao
         this.client.connect(Config.url);
-
         this.sender.pedirNovoNome(Config.nomeJogador);
         this.sender.pedirCor(Config.corDefault);
+        this.sender.pedirStatus();      // para carregar a posicao e direção logo
+
+        tela = new View(this);
 
         Thread thread = new Thread(this);
         thread.start();
@@ -90,10 +96,14 @@ public class Bot implements Runnable, IBot {
         }
     }
 
+    public void limparObservacaoes() {
+        this.ultimaObservacao.clear();
+    }
+
     public void exibirScore() {
         System.out.println("==== SCOREBOARD ====");
-        System.out.printf("Time: %d", time);
-        System.out.printf("Status: %s", state.toString());
+        System.out.printf("Time: %d\n", time);
+        System.out.printf("Status: %s\n", state.toString());
         for (ScoreBoard sb: this.listaScores) {
             String s = String.format("%s (%s): score=%d, energy=%d",
                     sb.name,
@@ -107,12 +117,11 @@ public class Bot implements Runnable, IBot {
     /* IMPLEMENTACOES DE IBOT */
     public int getX() { return this.x; }
     public int getY() { return this.y; }
-    public long getScore() { return this.score; }
-    public long getEnergy() { return this.energy; }
-    public long getTime() { return this.time; }
+    // public long getScore() { return this.score; }
+    public int getEnergy() { return this.energy; }
+    public int getTick() { return this.tick; }
     public PlayerInfo.Direction getDir() { return this.dir; }
     public ArrayList<Observation> getUltimaObservacao() { return this.ultimaObservacao; }
-    public void setFilaAcoes(ArrayList<Action> filaAcoes) { this.filaAcoes = filaAcoes; }
     /* FIM DAS IMPLEMENTACOES DO IBOT */
 
     /**
@@ -121,26 +130,36 @@ public class Bot implements Runnable, IBot {
     public void run() {
         int timer = 0;
 
+        this.sender.pedirStatusGame();
         dormir(Config.timerRapido);
 
         while (true) {
+            this.tick += 1;
             this.sender.pedirStatusGame();
-
             switch (state) {
-                // dento de um jogo
+                // dentro de um jogo
                 case game -> {
-                    this.time += 1;
+                    this.ai.atualizarMapa();
+                    this.tela.repaint();
+                    System.out.println(ultimaObservacao);
+
+                    Action acao = this.ai.pensarRoubado();
+                    this.sender.enviarAction(acao);
+
+                    limparObservacaoes();
                     this.sender.pedirObservacao();
-                    // this.AI.pensar()
+                    this.sender.pedirStatus();
+
                     dormir(Config.timerRapido);
                 }
                 case dead, ready, gameover -> {
-                    timer += 1;
+                    Field.init();
                     if (timer == 5) {
                         this.sender.pedirScoreboard();
                         exibirScore();
                         timer = 0;
                     }
+                    timer += 1;
                     dormir(Config.timerDefault);
                 }
             }

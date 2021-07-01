@@ -10,4 +10,5 @@ public enum Observation {
     PAREDE,         // impacto com uma parede
     ACERTO,         // acertou alguem
     DANO,           // tomou dano de alguem
+    INIMIGOFRENTE,  // inimigo na sua frente
 }
