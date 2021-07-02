@@ -3,9 +3,9 @@ package control.server;
 import INF1771_GameClient.Dto.PlayerInfo;
 import INF1771_GameClient.Dto.ScoreBoard;
 import INF1771_GameClient.Socket.*;
-import control.Bot;
+import control.drone.Bot;
 import control.Config;
-import control.enums.Observation;
+import control.drone.Observation;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -23,21 +23,29 @@ public class GameListener implements CommandListener {
      * @param observations String na forma "obs,obs,obs,obs...obs,"
      */
     private void parseObservations(String observations) {
-        // limpa as ultimas observacoes
-
         if (observations.trim().equals("")) { return; }
 
         // cria uma lista contendo a string de cada observacao
         String[] lista = observations.trim().split(",");
+        String[] temp;
+        this.bot.ultimaObservacao = new Observation();
+
         // adiciona cada observacao de acordo com o nome no enum
         for (String o: lista) {
-            if (o.equals("blocked")) { this.bot.ultimaObservacao.add(Observation.PAREDE); }
-            if (o.equals("steps")) { this.bot.ultimaObservacao.add(Observation.INIMIGO); }
-            if (o.equals("breeze")) { this.bot.ultimaObservacao.add(Observation.BURACO); }
-            if (o.equals("flash")) { this.bot.ultimaObservacao.add(Observation.FLASH); }
-            if (o.equals("blueLight")) { this.bot.ultimaObservacao.add(Observation.TESOURO); }
-            if (o.equals("redLight")) { this.bot.ultimaObservacao.add(Observation.POWERUP); }
-            if (o.equals("weaklight")) { this.bot.ultimaObservacao.add(Observation.LUZFRACA); }
+            // verificando a observaçao de inimigo (enemy#X)
+            temp = o.split("#");
+            if (temp.length > 1) {
+
+                this.bot.ultimaObservacao.isInimigoFrente = true;
+                this.bot.ultimaObservacao.distanciaInimigoFrente = Integer.parseInt(temp[1]);
+            }
+
+            if (o.equals("blocked")) { this.bot.ultimaObservacao.isParede = true; }
+            if (o.equals("steps")) { this.bot.ultimaObservacao.isInimigo = true; }
+            if (o.equals("breeze")) { this.bot.ultimaObservacao.isBuraco = true; }
+            if (o.equals("flash")) { this.bot.ultimaObservacao.isFlash = true; }
+            if (o.equals("blueLight")) { this.bot.ultimaObservacao.isTesouro = true; }
+            if (o.equals("redLight")) { this.bot.ultimaObservacao.isPowerup = true; }
         }
     }
 
@@ -165,7 +173,7 @@ public class GameListener implements CommandListener {
     private void parseHit(String target) {
         String s = String.format("Acertei [%s]", target);
         this.bot.log.add(s);
-        this.bot.ultimaObservacao.add(Observation.ACERTO);
+        this.bot.ultimaObservacao.isAcerto = true;
     }
 
     /**
@@ -175,7 +183,7 @@ public class GameListener implements CommandListener {
     private void parseDamage(String shooter) {
         String s = String.format("Fui atingido por [%s]", shooter);
         this.bot.log.add(s);
-        this.bot.ultimaObservacao.add(Observation.DANO);
+        this.bot.ultimaObservacao.isDano = true;
     }
 
     public void receiveCommand(String[] cmd) {

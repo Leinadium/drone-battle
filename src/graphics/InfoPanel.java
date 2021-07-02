@@ -3,9 +3,8 @@ package graphics;
 import javax.swing.*;
 import java.awt.*;
 
-import control.Bot;
-import control.AI;
-import control.Config;
+import control.drone.Bot;
+import control.drone.AI;
 
 public class InfoPanel extends JPanel {
     public final int COMPRIMENTO = 100;

@@ -1,9 +1,8 @@
 package graphics;
 
 import javax.swing.*;
-import java.awt.*;
 
-import control.Bot;
+import control.drone.Bot;
 import control.Config;
 
 

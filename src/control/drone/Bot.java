@@ -1,14 +1,16 @@
-package control;
+package control.drone;
 
 import INF1771_GameClient.Dto.PlayerInfo;
 import INF1771_GameClient.Dto.ScoreBoard;
 import INF1771_GameClient.Dto.ShotInfo;
 import INF1771_GameClient.Socket.HandleClient;
+import control.Config;
 import control.enums.Action;
-import control.enums.Observation;
 import control.interfaces.IBot;
+import control.map.Field;
 import control.server.ConnectionListener;
 import control.server.GameListener;
+import control.server.Log;
 import control.server.Sender;
 
 import graphics.View;
@@ -24,7 +26,7 @@ public class Bot implements Runnable, IBot {
     public Log log;                                         // log do jogo
     public Sender sender;                                   // envio de mensagens
     public long time;                                       // tempo decorrido
-    public ArrayList<Observation> ultimaObservacao;         // observacao do bot
+    public Observation ultimaObservacao;         // observacao do bot
 
     public AI ai;
 
@@ -49,7 +51,7 @@ public class Bot implements Runnable, IBot {
         this.listaJogadores = new HashMap<>();
         this.listaDisparos = new ArrayList<>();
         this.listaScores = new ArrayList<>();
-        this.ultimaObservacao = new ArrayList<>();
+        this.ultimaObservacao = new Observation();
 
         this.time = 0;
 
@@ -61,9 +63,9 @@ public class Bot implements Runnable, IBot {
 
         // inicia a conexao
         this.client.connect(Config.url);
-        this.sender.pedirNovoNome(Config.nomeJogador);
-        this.sender.pedirCor(Config.corDefault);
-        this.sender.pedirStatus();      // para carregar a posicao e direção logo
+        // this.sender.pedirNovoNome(Config.nomeJogador);
+        // this.sender.pedirCor(Config.corDefault);
+        // this.sender.pedirStatus();      // para carregar a posicao e direção logo
 
         tela = new View(this);
 
@@ -78,15 +80,6 @@ public class Bot implements Runnable, IBot {
         config();
     }
 
-    /**
-     * Cria um novo bot, rodando as configuracoes padrao mas trocando o nome
-     * @param nome Nome do bot
-     */
-    public Bot(String nome) {
-        config();
-        this.sender.pedirNovoNome(nome);
-    }
-
     public void dormir(int ms) {
         if (ms < 0) { return; }
         try {
@@ -97,7 +90,7 @@ public class Bot implements Runnable, IBot {
     }
 
     public void limparObservacaoes() {
-        this.ultimaObservacao.clear();
+        this.ultimaObservacao = new Observation();
     }
 
     public void exibirScore() {
@@ -121,7 +114,7 @@ public class Bot implements Runnable, IBot {
     public int getEnergy() { return this.energy; }
     public int getTick() { return this.tick; }
     public PlayerInfo.Direction getDir() { return this.dir; }
-    public ArrayList<Observation> getUltimaObservacao() { return this.ultimaObservacao; }
+    public Observation getUltimaObservacao() { return this.ultimaObservacao; }
     /* FIM DAS IMPLEMENTACOES DO IBOT */
 
     /**
@@ -141,7 +134,7 @@ public class Bot implements Runnable, IBot {
                 case game -> {
                     this.ai.atualizarMapa();
                     this.tela.repaint();
-                    System.out.println(ultimaObservacao);
+                    this.ultimaObservacao.print();
 
                     Action acao = this.ai.pensarRoubado();
                     this.sender.enviarAction(acao);

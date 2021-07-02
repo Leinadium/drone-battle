@@ -1,4 +1,4 @@
-package control;
+package control.server;
 
 import java.util.ArrayList;
 import java.util.List;

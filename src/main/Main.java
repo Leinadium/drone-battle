@@ -1,6 +1,6 @@
 package main;
 
-import control.Bot;
+import control.drone.Bot;
 
 public class Main {
 

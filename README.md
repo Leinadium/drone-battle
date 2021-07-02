@@ -12,72 +12,81 @@ Este projeto envolve a construção de uma inteligência artificial para competi
 
 ## Funcionamento
 
-A inteligência artificial utilizada foi uma *máquina de estados ponderada* , com usos de algoritmos de *pathfinding* 
+A inteligência artificial utilizada foi uma *máquina de estados* , com usos de algoritmos de *pathfinding* 
 
-A cada tique (100ms), é feita uma observação em volta do drone. A próxima decisão deve ser tomada em base dessas observações,
+A cada tick (100ms), é feita uma observação em volta do drone. A próxima decisão deve ser tomada em base dessas observações,
 assim como outros detalhes, como o mapa em volta.
 
-As decisões (estados) e os seus pesos foram programados da seguinte maneira:
-
-### Explorar
-
-O objetivo nesse estado é caminhar pelo mapa em lugares ainda não explorados, para conseguir obter mais informações.
-
-**Cálculo do peso**:
-```text
-1 - peso(Coletar)
-```
+Os estados estão abaixo, em ordem decrescente de relevância:
 
 ### Atacar
 
-O objetivo nesse estado é atacar (e se possível, perseguir) um inimigo.
+*Condição: * Quando aparece um inimigo na frente do drone, e a energia do drone está acima de 30.
 
-**Cálculo do peso**:
-```text
-1 - peso(fugir)
-```
+*Ação: * Atirar uma vez
 
 ### Fugir
 
-O objetivo nesse estado é andar em direção ao *powerup* mais próximo de uma maneira um pouco aleatória.
-Ele fica nesse estado por 10 ticks (1 tick = 1 ação tomada)
+*Condição: * Quando tomar algum dano inimigo, ou quando houver um inimigo (seja em volta ou na frente) e a energia do 
+drone está menor ou igual a 30.
 
-**Cálculo do peso**:
+Esse estado permanecerá ativo por no mínimo 5 *ticks* .
+
+*Ação: *
+
+* Se o drone tomou algum dano, tenta fugir para um quadrado mais próximo na área 3x3 na frente dele;
+* Se houver um inimigo em volta, tenta fugir para um quadrado mais próximo;
+* Se houver um inimigo na frente, tenta fugir para o quadrado mais próximo numa área 5x2 dos lados dele.
+
+Uma visualização das áreas abaixo:
+
 ```text
-(0.5 + 0.5 * (energiaMinha - energiaInimigo) / 100 ) * energiaMinha / 100
+
+0AAA0  AAAAA  AA0AA
+0AAA0  A000A  AA0AA
+0AAA0  A0X0A  AAXAA
+00X00  A000A  AA0AA
+00000  AAAAA  AA0AA
+
 ```
+
+Se não houver nenhum quadrado disponível, ele faz a ação recomendada para *Recarregar*
+
+Esse estado implementa uma fila de ações, que será explicado mais abaixo.
 
 ### Recarregar
 
-O objetivo nesse estado é chegar em um *powerup* da maneira mais rápida possível, para recarregar as energias do drone.
+*Condição: * Quando a energia do drone estiver abaixo de 30.
 
-Nesse caso, será utilizado o *A\** , que fornece o menor caminho até o *powerup* mais próximo que estiver disponível.
+*Ação: * Calcula o *powerup* mais próximo (em que os ticks até o powerup nascer menos os ticks até chegar nele sejam o menor possível).
 
-**Cálculo do peso**: 
-```text
-1                           quando Energia < 30
-1 - (Energia - 30) / 40     quando 30 < Energia < 70 
-0                           quando Energia > 70
-```
+* Se este *powerup* é possível coletar imediatamente, seguir o menor caminho seguro até ele;
+* Se este *powerup* não seja possível coletar imediatamente, iniciar uma *exploração com ponto focal nele* (mais explicado abaixo);
+* Se não houver *powerup* conhecido, faz o recomendado para *Exploração* .
 
 ### Coletar
 
-O objetivo nesse estado é coletar algum ouro, seja na própria posição do drone, ou em alguma posição distante.
+*Condição: * Quando há algum ouro que seja possível coletar imediatamente (ou seja, os ticks até este renascer menos os ticks
+ para chegar neste é igual ou menor que zero).
 
-**Cálculo do peso**:
-```text
-quando está na posição do ouro: 1                           
-em outros casos:
+*Ação: * Seguir o menor caminho conhecido até ele.
 
-media de (2/pi * 0.5 * arctan(distancia - tempo) + 0.5)
-para cada posição de ouro conhecida, onde
-    distancia = distancia do drone até o ouro
-    tempo = em quanto tempo o ouro renasce
+Esse estado implementa uma fila de ações, que será explicado mais abaixo.
 
-```
+### Exploração
 
-Cada peso varia de 0 até 1. Dentre todos os estados, é escolhido executar as ações do estado com melhor peso.
+*Condição: * Quando nenhum dos outros estados estiver ativo
 
-Cada estado, ao ser escolhido, cria uma lista de ações a serem executadas. Caso ele seja escolhido novamente para decidir
-a próxima ação, a lista de ações permanecerá a mesma. Caso seja escolhida um novo estado, a lista de ações será recalculada.
+*Ação: * Calcula o **ponto focal** da exploração. O ponto focal é o quadrado inicial do drone quando não se sabe a
+localização de nenhum ouro, e é o quadrado médio de todos os ouros conhecidos quando se sabe a localização de algum ouro.
+Usando esse ponto focal, é calculado o bloco cuja distância euclidiana ao quadrado do ponto focal somado com a distância mínima
+do drone até o bloco é a menor possível. Os blocos verificados são os quatro blocos em volta do drone, e os blocos distantes
+da menor distância manhattan do ponto focal que possui algum bloco seguro. 
 
+Se não houver nenhum bloco seguro para explorar, é procurado um bloco que contenha um teleporte. 
+Se também não houver, algum bloco que possa ter um buraco (mais arriscado).
+Se ainda não houver, então o drone está preso, e não há nada o que fazer.
+
+
+A fila de ações utilizada em alguns estados é uma fila contendo as próximas ações a serem feitas. Caso na próxima observação
+o estado seja mantido, não será recalculada as ações, mas serão utilizadas as ações dessa fila, até que ela esteja vazia.

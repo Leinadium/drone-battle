@@ -1,8 +1,8 @@
 package graphics;
 
 
-import control.Bot;
-import control.Field;
+import control.drone.Bot;
+import control.map.Field;
 import control.enums.Position;
 
 import javax.swing.*;
