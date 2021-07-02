@@ -37,6 +37,7 @@ public class Bot implements Runnable, IBot {
     public PlayerInfo.State state;
     public long score;
     public int energy;
+    public int ping;
 
     public JFrame tela;
 
@@ -63,8 +64,7 @@ public class Bot implements Runnable, IBot {
 
         // inicia a conexao
         this.client.connect(Config.url);
-        // this.sender.pedirNovoNome(Config.nomeJogador);
-        // this.sender.pedirCor(Config.corDefault);
+
         // this.sender.pedirStatus();      // para carregar a posicao e direção logo
 
         tela = new View(this);
@@ -122,6 +122,7 @@ public class Bot implements Runnable, IBot {
      */
     public void run() {
         int timer = 0;
+        Long tempPing;
 
         this.sender.pedirStatusGame();
         dormir(Config.timerRapido);
@@ -132,6 +133,8 @@ public class Bot implements Runnable, IBot {
             switch (state) {
                 // dentro de um jogo
                 case game -> {
+                    tempPing = System.currentTimeMillis();
+
                     this.ai.atualizarMapa();
                     this.tela.repaint();
                     this.ultimaObservacao.print();
@@ -143,7 +146,10 @@ public class Bot implements Runnable, IBot {
                     this.sender.pedirObservacao();
                     this.sender.pedirStatus();
 
-                    dormir(Config.timerRapido);
+                    tempPing = System.currentTimeMillis() - tempPing;
+                    this.ping = tempPing.intValue();
+
+                    dormir(Config.timerRapido - ping);
                 }
                 case dead, ready, gameover -> {
                     Field.init();

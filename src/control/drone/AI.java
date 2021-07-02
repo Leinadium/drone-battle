@@ -7,8 +7,6 @@ import control.enums.State;
 import control.interfaces.IBot;
 import control.map.Field;
 
-import java.util.ArrayList;
-import java.util.Random;
 import java.util.Scanner;
 
 public class AI {
@@ -17,15 +15,8 @@ public class AI {
     public State estadoAtual;
     public Action acaoAtual;
     int tickFugir;                      // ticks que representam quanto tempo ele esta fugindo
+    int ticksAtacando = 0;
     Scanner scanner = new Scanner(System.in);
-
-    public float pesoExplorar;
-    public float pesoAtacar;
-    public float pesoFugir;
-    public float pesoRecarregar;
-    public float pesoColetar;
-
-    Random random = new Random();
 
     public AI(Bot bot) {
         this.bot = bot;
@@ -74,7 +65,7 @@ public class AI {
         Observation o = this.bot.getUltimaObservacao();
 
         if (o.isFlash || o.isBuraco) {
-            Field.setAround(x, y, dir, Position.DANGER);
+            Field.setAround(x, y, Position.DANGER);
             ehPerigo = true;
         }
         if (o.isParede) {
@@ -93,7 +84,7 @@ public class AI {
         }
 
         if (!ehPerigo) {
-            Field.setAround(x, y, dir, Position.SAFE);
+            Field.setAround(x, y, Position.SAFE);
             if (!ehParede) {
                 Field.setFront(x, y, dir, Position.SAFE);
             }
@@ -111,7 +102,6 @@ public class AI {
     private State calcularEstado() {
         Observation o = bot.getUltimaObservacao();
         int e = bot.getEnergy();
-        int t = bot.getTick();
 
         // excecao a regra, se tiver um ouro coleta imediatamente. Sempre vale a pena
         if (o.isTesouro) {
@@ -125,14 +115,15 @@ public class AI {
         }
 
         // verificando atacar
-        if (o.isInimigoFrente && e > 30) {
+        if (o.isInimigoFrente && e > 30 && ticksAtacando > 0) {
+            ticksAtacando = 10;
             return State.ATACAR;
         }
 
         // verificando fugir
         if ((o.isDano && !(o.isInimigo || o.isInimigoFrente))
                 || ((o.isInimigoFrente || o.isInimigo) && e <= 30 )) {
-            tickFugir = 1;
+            tickFugir = 5;
             return State.FUGIR;
         }
 
@@ -142,7 +133,7 @@ public class AI {
         }
 
         // verificando coletar
-        if (Field.hasOuro() && Field.hasOuroParaColetar(bot.getX(), bot.getY(), bot.getTick())) {
+        if (Field.hasOuro() && Field.hasOuroParaColetar(bot.getX(), bot.getY(), bot.getDir(), bot.getTick())) {
             return State.COLETAR;
         }
 
@@ -155,6 +146,7 @@ public class AI {
      * Neste caso, atira uma vez
      */
     private void doAtacar() {
+        ticksAtacando -= 1;
         acaoAtual = Action.ATIRAR;
     }
 
@@ -194,8 +186,9 @@ public class AI {
                     || (Field.get(coord[0], coord[1])) == Position.DANGER) {
                 continue;
             }
-            temp = Field.aStar(bot.getX(), bot.getY(), coord[0], coord[1]);
-            if ((caminho == null && temp != null) || caminho.tamanho > temp.tamanho) {
+            temp = Field.aStar(bot.getX(), bot.getY(), bot.getDir(), coord[0], coord[1]);
+            if (temp == null) { continue; }
+            if (caminho == null || caminho.tamanho > temp.tamanho) {
                 caminho = temp;
             }
         }
@@ -224,7 +217,7 @@ public class AI {
      * Se não tiver powerup, explora
      */
     private void doRecarregar() {
-        if (Field.hasPowerupParaColetar(bot.getX(), bot.getY(), bot.getTick())) {
+        if (Field.hasPowerupParaColetar(bot.getX(), bot.getY(), bot.getDir(), bot.getTick())) {
             // pega o path que tem no buffer dele
             acaoAtual = Field.getBufferPath().acoes[0];
             return;

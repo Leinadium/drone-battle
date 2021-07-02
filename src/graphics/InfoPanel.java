@@ -16,7 +16,7 @@ public class InfoPanel extends JPanel {
     JLabel pontuacao;
 
     JLabel stateText;
-    JLabel pesoExplorar;
+    JLabel ping;
     JLabel pesoAtacar;
     JLabel pesoFugir;
     JLabel pesoRecarregar;
@@ -51,10 +51,11 @@ public class InfoPanel extends JPanel {
         stateText.setAlignmentX(Component.CENTER_ALIGNMENT);
         add(stateText);
 
-        pesoExplorar = new JLabel();
-        pesoExplorar.setAlignmentX(Component.CENTER_ALIGNMENT);
-        add(pesoExplorar);
+        ping = new JLabel();
+        ping.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(ping);
 
+        /*
         pesoAtacar = new JLabel();
         pesoAtacar.setAlignmentX(Component.CENTER_ALIGNMENT);
         add(pesoAtacar);
@@ -70,6 +71,7 @@ public class InfoPanel extends JPanel {
         pesoColetar = new JLabel();
         pesoColetar.setAlignmentX(Component.CENTER_ALIGNMENT);
         add(pesoColetar);
+         */
 
         setVisible(true);
     }
@@ -82,11 +84,11 @@ public class InfoPanel extends JPanel {
         posY.setText("Y: " + this.bot.getY());
         energia.setText("E: " + this.bot.getEnergy());
         stateText.setText("S: " + this.ai.estadoAtual);
-        pesoExplorar.setText("Exp: " + this.ai.pesoExplorar);
-        pesoFugir.setText("Fug: " + this.ai.pesoFugir);
-        pesoAtacar.setText("Ata: " + this.ai.pesoAtacar);
-        pesoRecarregar.setText("Rec: " + this.ai.pesoRecarregar);
-        pesoColetar.setText("Col: " + this.ai.pesoColetar);
+        ping.setText("ms: " + this.bot.ping);
+        // pesoFugir.setText("Fug: " + this.ai.pesoFugir);
+        // pesoAtacar.setText("Ata: " + this.ai.pesoAtacar);
+        // pesoRecarregar.setText("Rec: " + this.ai.pesoRecarregar);
+        // pesoColetar.setText("Col: " + this.ai.pesoColetar);
     }
 
 

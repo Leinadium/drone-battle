@@ -1,8 +1,6 @@
 package control.map;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import INF1771_GameClient.Dto.PlayerInfo;
 import control.Config;
@@ -27,6 +25,9 @@ public class Field {
 
     private static Path bufferPath;
 
+    private static int xSpawn = -1;
+    private static int ySpawn = -1;
+
     public static void init() {
         if (mapa == null) {
             mapa = new HashMap<>();
@@ -36,6 +37,13 @@ public class Field {
     }
 
     public static void set(int x, int y, Position tipoCasa) {
+
+        // primeiro set de uma casa vazia, logo eh o spawn do jogador
+        if (tipoCasa == Position.EMPTY && xSpawn == -1) {
+            xSpawn = x;
+            ySpawn = y;
+        }
+
         String s = x + "-" + y;
 
         if (tipoCasa == Position.DANGER) {
@@ -85,7 +93,7 @@ public class Field {
      * @param dir Direcao do drone
      * @param tipo Informacao do bloco
      */
-    public static void setAround(int x, int y, PlayerInfo.Direction dir, Position tipo) {
+    public static void setAround(int x, int y, Position tipo) {
         set(x + 1, y, tipo);
         set(x - 1, y, tipo);
         set(x , y + 1, tipo);
@@ -114,11 +122,12 @@ public class Field {
      * menor que o tempo para chegar lá
      * @param x posicao x do drone
      * @param y posicao y do drone
+     * @param dir direcao do drone
      * @param tick tick atual do jogo
      * @return true se houver algum ouro para coletar
      */
-    public static boolean hasOuroParaColetar(int x, int y, int tick) {
-        return hasAlgoParaColetar(x, y, tick, posicoesOuro);
+    public static boolean hasOuroParaColetar(int x, int y, PlayerInfo.Direction dir, int tick) {
+        return hasAlgoParaColetar(x, y, dir, tick, posicoesOuro);
     }
 
     /**
@@ -127,14 +136,15 @@ public class Field {
      * menor que o tempo para chegar lá
      * @param x posicao x do drone
      * @param y posicao y do drone
+     * @param dir direcao do drone
      * @param tick tick atual do jogo
      * @return true se houver algum powerup para coletar
      */
-    public static boolean hasPowerupParaColetar(int x, int y, int tick) {
-        return hasAlgoParaColetar(x, y, tick, posicoesPowerup);
+    public static boolean hasPowerupParaColetar(int x, int y, PlayerInfo.Direction dir, int tick) {
+        return hasAlgoParaColetar(x, y, dir, tick, posicoesPowerup);
     }
 
-    private static boolean hasAlgoParaColetar(int x, int y, int tick, HashMap<String, Integer> posicoes) {
+    private static boolean hasAlgoParaColetar(int x, int y, PlayerInfo.Direction dir, int tick, HashMap<String, Integer> posicoes) {
         int xDest, yDest, tickDest, distanciaDest, ticksParaNascer;
         String[] temp;
         for (Map.Entry<String, Integer> entry: posicoes.entrySet()) {
@@ -144,7 +154,8 @@ public class Field {
             tickDest = entry.getValue();
             ticksParaNascer = (Config.tempoSpawn / Config.timerRapido) - (tick - tickDest);
 
-            bufferPath = aStar(x, y, xDest, yDest);
+            bufferPath = aStar(x, y, dir, xDest, yDest);
+            if (bufferPath == null) { return false; }
             distanciaDest = bufferPath.tamanho;
             if (ticksParaNascer - distanciaDest <= 0) { return true; }
         }
@@ -163,6 +174,32 @@ public class Field {
      * @return true se houver algum ouro
      */
     public static boolean hasOuro() { return posicoesOuro.size() > 0; }
+
+    /**
+     * Retorna o ponto medio dos ouros, ou o spawn se nao tiver nenhum ouro
+     */
+    public static int[] pontoMedioOuro() {
+        if (!hasOuro()) {
+            return new int[] {xSpawn, ySpawn};
+        }
+        int somax = 0;
+        int somay = 0;
+        String [] c;
+        for (String s: posicoesOuro.keySet()) {
+            c = s.split("-");
+            somax += Integer.parseInt(c[0]);
+            somay += Integer.parseInt(c[1]);
+        }
+        return new int[] {somax / posicoesOuro.size(), somay / posicoesOuro.size()};
+    }
+
+    /**
+     * Encontra o melhor bloco ainda não explorado a partir do ponto focal fornecido
+     */
+    public static int[] melhorBlocoUsandoPontoFocal(int xDrone, int yDrone, PlayerInfo.Direction dirDrone, int xPonto, int yPonto) {
+        // TODO
+        return null;
+    }
 
     /**
      * Verifica se tem algum powerup ja descoberto
@@ -250,17 +287,153 @@ public class Field {
         public int tamanho;
     }
 
+    public static int manhattan(int x, int y, int x1, int y1) {
+        return (Math.abs(x - x1) + Math.abs(y - y1));
+    }
+
     /**
      * Algoritmo A* para encontrar o melhor caminho entre os dois pontos.
      * Evita caminhos perigosos (com possível burado ou flash)
      * @param xDrone posicao x do drone
      * @param yDrone posicao y do drone
+     * @param dirDrone direcao do drone
      * @param xDest posicao x do destino
      * @param yDest posicao y do destino
      * @return Um objeto Path contendo o caminho até o ponto, ou null caso não haja nenhum caminho até lá
      */
-    public static Path aStar(int xDrone, int yDrone, int xDest, int yDest) {
-        // TODO
-        return new Path();
+    public static Path aStar(int xDrone, int yDrone, PlayerInfo.Direction dirDrone,  int xDest, int yDest) {
+
+        Node.init();
+        Node nodeInicial = Node.getNode(xDrone, yDrone, dirDrone);
+        nodeInicial.distanciaFinal = manhattan(xDrone, yDrone, xDest, yDest);
+        nodeInicial.ticksPercorridos = 0;
+        nodeInicial.anterior = null;
+
+        // priority queue contendo os node que ainda nao precisam ser verificados
+        PriorityQueue<Node> openSet = new PriorityQueue<>(100, new CompararNode());
+        openSet.add(nodeInicial);
+
+        Node node;
+        int novoTick;
+        while (!openSet.isEmpty()) {
+            node = openSet.poll();
+            if (node.x == xDest && node.y == yDest) {
+                return node.gerarCaminho();
+            }
+            Node[] vizinhos = node.gerarVizinhos(node);
+            if (vizinhos == null) {continue;}
+
+            for (Node viz: vizinhos) {
+                novoTick = node.ticksPercorridos + 1;
+                if (novoTick < viz.ticksPercorridos) {
+                    viz.anterior = node;
+                    viz.ticksPercorridos = node.ticksPercorridos + 1;
+                    viz.distanciaFinal = manhattan(viz.x, viz.y, xDest, yDest);
+                    if (!openSet.contains(viz)) {
+                        openSet.add(viz);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Classe para a implementacao do A*
+     */
+    private static class Node {
+
+        private static HashMap<String, Node> hashMap;
+
+        public static Node getNode(int x, int y, PlayerInfo.Direction dir) {
+            String s = x + "/" + y + "/" + dir;
+            if (hashMap.containsKey(s)) { return hashMap.get(s); }
+            Node n = new Node(x, y, dir);
+            hashMap.put(s, n);
+            return n;
+        }
+
+        public static void init() {hashMap = new HashMap<>();}
+
+        public int distanciaFinal;
+        public int ticksPercorridos = 1000000;
+        public Node anterior;
+
+        public int x;
+        public int y;
+        public PlayerInfo.Direction dir;
+        public Node(int x, int y, PlayerInfo.Direction dir) {
+            this.x = x; this.y = y; this.dir = dir;
+        }
+
+        public Node[] gerarVizinhos(Node n) {
+            switch (n.dir) {
+                case north, south -> {
+                    return new Node[]{
+                            Node.getNode(x, y + 1, dir), Node.getNode(x, y - 1, dir),
+                            Node.getNode(x, y, PlayerInfo.Direction.east),
+                            Node.getNode(x, y, PlayerInfo.Direction.west)
+                    };
+                }
+                case east, west -> {
+                    return new Node[]{
+                            Node.getNode(x + 1, y, dir), Node.getNode(x - 1, y, dir),
+                            Node.getNode(x, y, PlayerInfo.Direction.north),
+                            Node.getNode(x, y, PlayerInfo.Direction.south)
+                    };
+                }
+            }
+            return null;
+        }
+
+        public Path gerarCaminho() {
+            Node atual = this;
+            Node anterior = this.anterior;
+
+            ArrayList<Action> acoes = new ArrayList<>();
+            while (anterior != null) {
+                if (atual.dir == anterior.dir) {
+                    switch (atual.dir) {
+                        case north -> {
+                            if (atual.y > anterior.y) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
+                        }
+                        case south -> {
+                            if (atual.y < anterior.y) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
+                        }
+                        case west -> {
+                            if (atual.x > anterior.x) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
+                        }
+                        case east -> {
+                            if (atual.x < anterior.x) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
+                        }
+                    }
+                } else {
+                    switch (atual.dir) {
+                        case north -> {
+                            if (anterior.dir == PlayerInfo.Direction.east) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
+                        }
+                        case south -> {
+                            if (anterior.dir == PlayerInfo.Direction.west) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
+                        }
+                        case east -> {
+                            if (anterior.dir == PlayerInfo.Direction.south) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
+                        }
+                        case west -> {
+                            if (anterior.dir == PlayerInfo.Direction.north) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
+                        }
+                    }
+                }
+                atual = anterior;
+                anterior = atual.anterior;
+            }
+            Path ret = new Path();
+            ret.acoes = acoes.toArray(ret.acoes);
+            ret.tamanho = ret.acoes.length;
+            return ret;
+        }
+    }
+
+    private static class CompararNode implements Comparator<Node> {
+        public int compare(Node n1, Node n2) { return n2.distanciaFinal - n1.distanciaFinal; }
     }
 }
