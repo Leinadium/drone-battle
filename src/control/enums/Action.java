@@ -7,4 +7,5 @@ public enum Action {
     DIREITA,            // virar a direita
     PEGAR,              // pegar do chao
     ATIRAR,             // atirar para a frente
+    NONE,               // nao fazer nada
 }

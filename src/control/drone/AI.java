@@ -7,19 +7,27 @@ import control.enums.State;
 import control.interfaces.IBot;
 import control.map.Field;
 
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class AI {
 
     IBot bot;
     public State estadoAtual;
+
     public Action acaoAtual;
     int tickFugir;                      // ticks que representam quanto tempo ele esta fugindo
     int ticksAtacando = 0;
     Scanner scanner = new Scanner(System.in);
 
+    // para exploracao
+    private State estadoAnterior;
+    public Field.Path pathAtual;
+
+
     public AI(Bot bot) {
         this.bot = bot;
+        estadoAnterior = null;
     }
 
 
@@ -41,7 +49,11 @@ public class AI {
      * @return Ação a ser feita
      */
     public Action pensar() {
+        atualizarMapa();
+
+        estadoAnterior = estadoAtual;
         estadoAtual = calcularEstado();
+
         switch (estadoAtual) {
             case FUGIR -> doFugir();
             case ATACAR -> doAtacar();
@@ -49,13 +61,16 @@ public class AI {
             case EXPLORAR -> doExplorar();
             case RECARREGAR -> doRecarregar();
         }
+
+        if (estadoAtual != State.ATACAR) {ticksAtacando = 10;}
+
         return acaoAtual;
     }
 
     /**
      * Atualiza o mapa a partir das observações atuais
      */
-    public void atualizarMapa() {
+    private void atualizarMapa() {
         PlayerInfo.Direction dir = this.bot.getDir();
         int x = this.bot.getX();
         int y = this.bot.getY();
@@ -69,15 +84,18 @@ public class AI {
             ehPerigo = true;
         }
         if (o.isParede) {
-            Field.setFront(x, y, dir, Position.PAREDE);
+            if (acaoAtual == Action.FRENTE) Field.setFront(x, y, dir, Position.PAREDE);
+            else Field.setBack(x, y, dir, Position.PAREDE);
             ehParede = true;
         }
         if (o.isPowerup) {
+            Field.removeSafe(x, y);
             Field.set(x, y, Position.POWERUP);
             Field.setPowerup(x, y, this.bot.getTick());
             ehVazio = false;
         }
         if (o.isTesouro) {
+            Field.removeSafe(x, y);
             Field.set(x, y, Position.OURO);
             Field.setOuro(x, y, this.bot.getTick());
             ehVazio = false;
@@ -86,10 +104,12 @@ public class AI {
         if (!ehPerigo) {
             Field.setAround(x, y, Position.SAFE);
             if (!ehParede) {
-                Field.setFront(x, y, dir, Position.SAFE);
+                if (acaoAtual == Action.FRENTE) Field.setFront(x, y, dir, Position.SAFE);
+                else Field.setBack(x, y, dir, Position.SAFE);
             }
         }
         if (ehVazio) {
+            Field.removeSafe(x, y);
             Field.set(x, y, Position.EMPTY);
         }
     }
@@ -116,7 +136,6 @@ public class AI {
 
         // verificando atacar
         if (o.isInimigoFrente && e > 30 && ticksAtacando > 0) {
-            ticksAtacando = 10;
             return State.ATACAR;
         }
 
@@ -147,6 +166,7 @@ public class AI {
      */
     private void doAtacar() {
         ticksAtacando -= 1;
+
         acaoAtual = Action.ATIRAR;
     }
 
@@ -160,7 +180,7 @@ public class AI {
      * Caso tenha um inimigo a sua frente, fugir da linha de visão dele
      */
     private void doFugir() {
-        tickFugir = 5;
+        if (tickFugir < 0) { tickFugir = 5; }
         Field.Path caminho = null, temp;
 
         Observation o = bot.getUltimaObservacao();
@@ -206,8 +226,18 @@ public class AI {
      * Vai no caminho mais rapido para um OURO
      */
     private void doColetar() {
+        if (this.bot.getUltimaObservacao().isTesouro) {
+            acaoAtual = Action.PEGAR;
+            return;
+        }
+
         // como foi rodado o hasOuroParaColetar, é possível pegar o path do buffer
-        acaoAtual = Field.getBufferPath().acoes[0];
+        pathAtual = Field.getBufferPath();
+        if (pathAtual != null && pathAtual.acoes.length == 0) {
+            acaoAtual = Action.NONE;
+        } else {
+            acaoAtual = pathAtual.acoes[0];
+        }
     }
 
     /**
@@ -217,13 +247,21 @@ public class AI {
      * Se não tiver powerup, explora
      */
     private void doRecarregar() {
+        if (this.bot.getUltimaObservacao().isPowerup) {
+            acaoAtual = Action.PEGAR;
+            return;
+        }
+
         if (Field.hasPowerupParaColetar(bot.getX(), bot.getY(), bot.getDir(), bot.getTick())) {
             // pega o path que tem no buffer dele
             acaoAtual = Field.getBufferPath().acoes[0];
             return;
         }
         if (Field.hasPowerup()) {
-            /* TODO */
+            Field.powerupMaisProximo(bot.getX(), bot.getY(), bot.getDir());
+            if (Field.getBufferPath() != null) {
+                acaoAtual = Field.getBufferPath().acoes[0];
+            }
         }
         else {
             doExplorar();
@@ -236,5 +274,31 @@ public class AI {
      */
     private void doExplorar() {
 
+        if (estadoAnterior == State.EXPLORAR && !Field.mapaMudou && pathAtual.tamanho > 1) {
+            // retirando a primeira ação do path e pegando a proxima
+
+            Action[] novaAcoes = new Action[pathAtual.tamanho - 1];
+            System.arraycopy(pathAtual.acoes, 1, novaAcoes, 0, pathAtual.tamanho-1);
+            pathAtual.acoes = novaAcoes;
+            pathAtual.tamanho -= 1;
+            acaoAtual = novaAcoes[0];
+
+            System.out.println(pathAtual.xDest + "/" + pathAtual.xDest + "/" + bot.getX()+ "/" + bot.getY());
+
+            return;
+        }
+
+        int[] pontoFocal = Field.pontoMedioOuro();
+        int[] destino = Field.melhorBlocoUsandoPontoFocal(bot.getX(), bot.getY(), bot.getDir(), pontoFocal[0], pontoFocal[1]);
+
+        pathAtual = Field.aStar(bot.getX(), bot.getY(), bot.getDir(), destino[0], destino[1]);
+
+        if (pathAtual == null) {
+            acaoAtual = Action.NONE;
+        }
+        else {
+            System.out.println(pathAtual.xDest + "/" + pathAtual.xDest + "/" + bot.getX()+ "/" + bot.getY());
+            acaoAtual = pathAtual.acoes[0];
+        }
     }
 }

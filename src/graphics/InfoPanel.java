@@ -5,6 +5,7 @@ import java.awt.*;
 
 import control.drone.Bot;
 import control.drone.AI;
+import control.map.Field;
 
 public class InfoPanel extends JPanel {
     public final int COMPRIMENTO = 100;
@@ -17,10 +18,18 @@ public class InfoPanel extends JPanel {
 
     JLabel stateText;
     JLabel ping;
-    JLabel pesoAtacar;
-    JLabel pesoFugir;
-    JLabel pesoRecarregar;
-    JLabel pesoColetar;
+    JLabel acaoAtual;
+    JLabel qtdSafe;
+
+    JLabel isInimigo;
+    JLabel isBuraco;
+    JLabel isFlash;
+    JLabel isPowerup;
+    JLabel isTesouro;
+    JLabel isParede;
+    JLabel isAcerto;
+    JLabel isDano;
+    JLabel isInimigoFrente;
 
     Bot bot;
     AI ai;
@@ -55,23 +64,51 @@ public class InfoPanel extends JPanel {
         ping.setAlignmentX(Component.CENTER_ALIGNMENT);
         add(ping);
 
-        /*
-        pesoAtacar = new JLabel();
-        pesoAtacar.setAlignmentX(Component.CENTER_ALIGNMENT);
-        add(pesoAtacar);
 
-        pesoFugir = new JLabel();
-        pesoFugir.setAlignmentX(Component.CENTER_ALIGNMENT);
-        add(pesoFugir);
+        acaoAtual = new JLabel();
+        acaoAtual.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(acaoAtual);
 
-        pesoRecarregar = new JLabel();
-        pesoRecarregar.setAlignmentX(Component.CENTER_ALIGNMENT);
-        add(pesoRecarregar);
 
-        pesoColetar = new JLabel();
-        pesoColetar.setAlignmentX(Component.CENTER_ALIGNMENT);
-        add(pesoColetar);
-         */
+        qtdSafe = new JLabel();
+        qtdSafe.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(qtdSafe);
+
+        isInimigo = new JLabel();
+        isInimigo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(isInimigo);
+
+        isBuraco = new JLabel();
+        isBuraco.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(isBuraco);
+
+        isFlash = new JLabel();
+        isFlash.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(isFlash);
+
+        isPowerup = new JLabel();
+        isPowerup.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(isPowerup);
+
+        isTesouro = new JLabel();
+        isTesouro.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(isTesouro);
+
+        isParede = new JLabel();
+        isParede.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(isParede);
+
+        isAcerto = new JLabel();
+        isAcerto.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(isAcerto);
+
+        isDano = new JLabel();
+        isDano.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(isDano);
+
+        isInimigoFrente = new JLabel();
+        isInimigoFrente.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(isInimigoFrente);
 
         setVisible(true);
     }
@@ -85,10 +122,19 @@ public class InfoPanel extends JPanel {
         energia.setText("E: " + this.bot.getEnergy());
         stateText.setText("S: " + this.ai.estadoAtual);
         ping.setText("ms: " + this.bot.ping);
-        // pesoFugir.setText("Fug: " + this.ai.pesoFugir);
-        // pesoAtacar.setText("Ata: " + this.ai.pesoAtacar);
-        // pesoRecarregar.setText("Rec: " + this.ai.pesoRecarregar);
-        // pesoColetar.setText("Col: " + this.ai.pesoColetar);
+        acaoAtual.setText("acao: " + this.ai.acaoAtual);
+        qtdSafe.setText("safes: " + Field.getSizeSafe());
+
+        isInimigo.setText("isInimigo: " + this.bot.ultimaObservacao.isInimigo);
+        isBuraco.setText("isBuraco: " + this.bot.ultimaObservacao.isBuraco);
+        isFlash.setText("isFlash: " + this.bot.ultimaObservacao.isFlash);
+        isPowerup.setText("isPowerup: " + this.bot.ultimaObservacao.isPowerup);
+        isInimigo.setText("isInimigo: " + this.bot.ultimaObservacao.isTesouro);
+        isParede.setText("isParede: " + this.bot.ultimaObservacao.isParede);
+        isAcerto.setText("isAcerto: " + this.bot.ultimaObservacao.isAcerto);
+        isDano.setText("isDano: " + this.bot.ultimaObservacao.isDano);
+        isInimigoFrente.setText("isFrente: " + this.bot.ultimaObservacao.isInimigoFrente);
+
     }
 
 

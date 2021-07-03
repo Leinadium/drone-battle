@@ -22,7 +22,19 @@ public class Observation {
         if (isParede) {s += "PAREDE|";}
         if (isAcerto) {s += "ACERTO|";}
         if (isDano) {s += "DANO|";}
-        if (isInimigo) {s += "ACERTO|";}
+        if (isInimigo) {s += "STEPS|";}
         System.out.println(s);
+    }
+    public void reset() {
+        isInimigo = false;
+        isBuraco = false;
+        isFlash = false;
+        isPowerup = false;
+        isTesouro = false;
+        isParede = false;
+        isAcerto = false;
+        isDano = false;
+        isInimigoFrente = false;
+        distanciaInimigoFrente = -1;
     }
 }

@@ -65,8 +65,6 @@ public class Bot implements Runnable, IBot {
         // inicia a conexao
         this.client.connect(Config.url);
 
-        // this.sender.pedirStatus();      // para carregar a posicao e direção logo
-
         tela = new View(this);
 
         Thread thread = new Thread(this);
@@ -90,7 +88,7 @@ public class Bot implements Runnable, IBot {
     }
 
     public void limparObservacaoes() {
-        this.ultimaObservacao = new Observation();
+        this.ultimaObservacao.reset();
     }
 
     public void exibirScore() {
@@ -122,43 +120,54 @@ public class Bot implements Runnable, IBot {
      */
     public void run() {
         int timer = 0;
-        Long tempPing;
+        long tempoExec;
+        boolean emPartida = false;
 
-        this.sender.pedirStatusGame();
-        dormir(Config.timerRapido);
+        dormir(Config.timerDefault);
 
         while (true) {
-            this.tick += 1;
-            this.sender.pedirStatusGame();
             switch (state) {
-                // dentro de um jogo
                 case game -> {
-                    tempPing = System.currentTimeMillis();
+                    // caso seja o inicio da partida
+                    if (!emPartida) {
+                        this.tick = 0;
+                        emPartida = true;
+                        this.sender.pedirStatus();
+                        this.sender.pedirObservacao();
+                        dormir(Config.timerRapido);
+                    }
+                    this.tick += 1;
+                    tempoExec = System.currentTimeMillis();
 
-                    this.ai.atualizarMapa();
-                    this.tela.repaint();
-                    this.ultimaObservacao.print();
-
-                    Action acao = this.ai.pensarRoubado();
+                    // faz a acao
+                    Action acao = this.ai.pensar();
                     this.sender.enviarAction(acao);
 
+                    // atualiza as coisas
+                    this.tela.repaint();
+
+                    // pede as proximas coisas
                     limparObservacaoes();
                     this.sender.pedirObservacao();
                     this.sender.pedirStatus();
 
-                    tempPing = System.currentTimeMillis() - tempPing;
-                    this.ping = tempPing.intValue();
+                    this.ping = (int) (System.currentTimeMillis() - tempoExec);
 
-                    dormir(Config.timerRapido - ping);
+                    this.sender.pedirStatusGame();
+                    dormir(Config.timerRapido);
                 }
                 case dead, ready, gameover -> {
+                    emPartida = false;
                     Field.init();
                     if (timer == 5) {
                         this.sender.pedirScoreboard();
+                        this.sender.pedirStatus();
                         exibirScore();
                         timer = 0;
                     }
                     timer += 1;
+
+                    this.sender.pedirStatusGame();
                     dormir(Config.timerDefault);
                 }
             }

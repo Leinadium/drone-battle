@@ -28,14 +28,12 @@ public class GameListener implements CommandListener {
         // cria uma lista contendo a string de cada observacao
         String[] lista = observations.trim().split(",");
         String[] temp;
-        this.bot.ultimaObservacao = new Observation();
 
         // adiciona cada observacao de acordo com o nome no enum
         for (String o: lista) {
             // verificando a observaçao de inimigo (enemy#X)
             temp = o.split("#");
             if (temp.length > 1) {
-
                 this.bot.ultimaObservacao.isInimigoFrente = true;
                 this.bot.ultimaObservacao.distanciaInimigoFrente = Integer.parseInt(temp[1]);
             }
@@ -47,6 +45,7 @@ public class GameListener implements CommandListener {
             if (o.equals("blueLight")) { this.bot.ultimaObservacao.isTesouro = true; }
             if (o.equals("redLight")) { this.bot.ultimaObservacao.isPowerup = true; }
         }
+
     }
 
 

@@ -19,24 +19,32 @@ public class Field {
     private static HashMap<String, Position> mapa;
     private static HashMap<String, Integer> posicoesOuro;
     private static HashMap<String, Integer> posicoesPowerup;
+    private static HashMap<String, Boolean> posicoesSafe;
 
     public static final int comprimento = 59;
     public static final int altura = 34;
 
     private static Path bufferPath;
+    public static boolean mapaMudou;
 
-    private static int xSpawn = -1;
-    private static int ySpawn = -1;
+    public static int xSpawn = -1;
+    public static int ySpawn = -1;
 
     public static void init() {
-        if (mapa == null) {
-            mapa = new HashMap<>();
-            posicoesOuro = new HashMap<>();
-            posicoesPowerup = new HashMap<>();
-        }
+        mapa = new HashMap<>();
+        posicoesOuro = new HashMap<>();
+        posicoesPowerup = new HashMap<>();
+        posicoesSafe = new HashMap<>();
     }
 
     public static void set(int x, int y, Position tipoCasa) {
+
+        Position get = get(x, y);
+        if (get == tipoCasa) {
+            mapaMudou = false;
+            return;
+        }
+        mapaMudou = true;
 
         // primeiro set de uma casa vazia, logo eh o spawn do jogador
         if (tipoCasa == Position.EMPTY && xSpawn == -1) {
@@ -49,20 +57,24 @@ public class Field {
         if (tipoCasa == Position.DANGER) {
             if (get(x, y) == Position.UNKNOWN) {
                 mapa.put(s, tipoCasa);
-            } else { return; }
+            }
+            return;
         }
-
         if (tipoCasa == Position.SAFE) {
             if (get(x, y) == Position.UNKNOWN || get(x, y) == Position.DANGER) {
                 mapa.put(s, tipoCasa);
-            } else { return; }
+                setSafe(x, y);
+            }
+            return;
         }
         if (tipoCasa == Position.EMPTY) {
-            if (get(x, y) == Position.OURO || get(x, y) == Position.POWERUP) {
-                return;
-            } else { mapa.put(s, tipoCasa); }
+            if (!(get(x, y) == Position.OURO || get(x, y) == Position.POWERUP)) {
+                mapa.put(s, tipoCasa);
+            }
+            return;
         }
         mapa.put(s, tipoCasa);
+        removeSafe(x, y);
     }
 
     public static Position get(int x, int y) {
@@ -81,16 +93,27 @@ public class Field {
         posicoesOuro.put(s, time);
     }
 
+    public static int getSizeSafe() {return posicoesSafe.size();}
+
     public static void setPowerup(int x, int y, int time) {
         String s = x + "-" + y;
         posicoesPowerup.put(s, time);
+    }
+
+    private static void setSafe(int x, int y) {
+        String s = x + "-" + y;
+        posicoesSafe.put(s, true);
+    }
+
+    public static void removeSafe(int x, int y) {
+        String s = x + "-" + y;
+        posicoesSafe.remove(s);
     }
 
     /**
      * Atualiza os blocos na sua frente e lados com aquela informacao
      * @param x Posicao x
      * @param y Posicao y
-     * @param dir Direcao do drone
      * @param tipo Informacao do bloco
      */
     public static void setAround(int x, int y, Position tipo) {
@@ -113,6 +136,15 @@ public class Field {
             case east -> set(x + 1, y, tipo);
             case south -> set(x, y + 1, tipo);
             case west -> set(x - 1, y, tipo);
+        }
+    }
+
+    public static void setBack(int x, int y, PlayerInfo.Direction dir, Position tipo) {
+        switch (dir) {
+            case north -> set(x, y + 1, tipo);
+            case east -> set(x - 1, y, tipo);
+            case south -> set(x, y - 1, tipo);
+            case west -> set(x + 1, y, tipo);
         }
     }
 
@@ -144,20 +176,59 @@ public class Field {
         return hasAlgoParaColetar(x, y, dir, tick, posicoesPowerup);
     }
 
+    /**
+     * Coloca o path para o powerup mais proximo no bufferPath, se houver
+     * Se nao, bufferpath sera nulo
+     */
+    public static void powerupMaisProximo(int x, int y, PlayerInfo.Direction dir) {
+        Path pathTemp;
+        int xTemp, yTemp;
+        String[] sTemp;
+        bufferPath = null;
+        for (String s: posicoesPowerup.keySet()) {
+            sTemp = s.split("-");
+            xTemp = Integer.parseInt(sTemp[0]);
+            yTemp = Integer.parseInt(sTemp[1]);
+
+            pathTemp = aStar(x, y, dir, xTemp, yTemp);
+            if (pathTemp == null) {continue;}
+
+            if (bufferPath == null || pathTemp.tamanho < bufferPath.tamanho) {
+                bufferPath = pathTemp;
+            }
+        }
+
+    }
+
     private static boolean hasAlgoParaColetar(int x, int y, PlayerInfo.Direction dir, int tick, HashMap<String, Integer> posicoes) {
         int xDest, yDest, tickDest, distanciaDest, ticksParaNascer;
         String[] temp;
+
+        // vao retornar true, mas tbm vai colocar no buffer o path para o mais proximo
+        boolean ret = false;
+        Path pathMaisProximo = null;
+
         for (Map.Entry<String, Integer> entry: posicoes.entrySet()) {
             temp = entry.getKey().split("-");
             xDest = Integer.parseInt(temp[0]);
             yDest = Integer.parseInt(temp[1]);
             tickDest = entry.getValue();
             ticksParaNascer = (Config.tempoSpawn / Config.timerRapido) - (tick - tickDest);
+            // System.out.println(entry.getKey() + '/' + ticksParaNascer);
 
             bufferPath = aStar(x, y, dir, xDest, yDest);
-            if (bufferPath == null) { return false; }
+            if (bufferPath == null) { continue; }
             distanciaDest = bufferPath.tamanho;
-            if (ticksParaNascer - distanciaDest <= 0) { return true; }
+            if (ticksParaNascer - distanciaDest < 0) {
+                ret = true;
+                if (pathMaisProximo == null || pathMaisProximo.tamanho > bufferPath.tamanho) {
+                    pathMaisProximo = bufferPath;
+                }
+            }
+        }
+        if (ret) {
+            bufferPath = pathMaisProximo;       // coloca no buffer
+            return true;
         }
         return false;
     }
@@ -197,8 +268,31 @@ public class Field {
      * Encontra o melhor bloco ainda não explorado a partir do ponto focal fornecido
      */
     public static int[] melhorBlocoUsandoPontoFocal(int xDrone, int yDrone, PlayerInfo.Direction dirDrone, int xPonto, int yPonto) {
-        // TODO
-        return null;
+        int[] ret = new int[2];
+        int menorDist = 100000;
+        int x, y, d, distanciaBlocoPonto, distanciaBlocoDrone;
+        Path path;
+        String[] temp;
+        for (String s: posicoesSafe.keySet()) {
+            temp = s.split("-");
+            x = Integer.parseInt(temp[0]);
+            y = Integer.parseInt(temp[1]);
+
+            // distanciaBlocoPonto = (int) Math.pow(manhattan(x, y, xPonto, yPonto), 2);
+            distanciaBlocoPonto = (int) (Math.pow(x - xPonto, 2) + Math.pow(y - yPonto, 2));
+
+            path = aStar(xDrone, yDrone, dirDrone, x, y);
+            if (path == null) {continue;}
+            distanciaBlocoDrone = path.tamanho;
+
+            d = distanciaBlocoDrone  + distanciaBlocoPonto;
+            if (d < menorDist) {
+                ret[0] = x;
+                ret[1] = y;
+                menorDist = d;
+            }
+        }
+        return ret;
     }
 
     /**
@@ -285,6 +379,8 @@ public class Field {
     public static class Path {
         public Action[] acoes;
         public int tamanho;
+        public int xDest;
+        public int yDest;
     }
 
     public static int manhattan(int x, int y, int x1, int y1) {
@@ -321,9 +417,9 @@ public class Field {
                 return node.gerarCaminho();
             }
             Node[] vizinhos = node.gerarVizinhos(node);
-            if (vizinhos == null) {continue;}
 
             for (Node viz: vizinhos) {
+                if (viz == null) { continue; }
                 novoTick = node.ticksPercorridos + 1;
                 if (novoTick < viz.ticksPercorridos) {
                     viz.anterior = node;
@@ -366,24 +462,36 @@ public class Field {
             this.x = x; this.y = y; this.dir = dir;
         }
 
-        public Node[] gerarVizinhos(Node n) {
+        /**
+         * Gera os vizinhos para o algoritmo do A*
+         * Retira Nodes invalidos
+         * @param n Node original
+         * @return array de nodes. Pode ter nodes nulos
+         */
+        private Node[] gerarVizinhos(Node n) {
+            Node[] ret;
             switch (n.dir) {
-                case north, south -> {
-                    return new Node[]{
-                            Node.getNode(x, y + 1, dir), Node.getNode(x, y - 1, dir),
-                            Node.getNode(x, y, PlayerInfo.Direction.east),
-                            Node.getNode(x, y, PlayerInfo.Direction.west)
-                    };
-                }
-                case east, west -> {
-                    return new Node[]{
-                            Node.getNode(x + 1, y, dir), Node.getNode(x - 1, y, dir),
-                            Node.getNode(x, y, PlayerInfo.Direction.north),
-                            Node.getNode(x, y, PlayerInfo.Direction.south)
-                    };
+                case north, south -> ret = new Node[]{
+                        Node.getNode(x, y + 1, dir), Node.getNode(x, y - 1, dir),
+                        Node.getNode(x, y, PlayerInfo.Direction.east),
+                        Node.getNode(x, y, PlayerInfo.Direction.west)
+                };
+                default -> ret = new Node[]{
+                        Node.getNode(x + 1, y, dir), Node.getNode(x - 1, y, dir),
+                        Node.getNode(x, y, PlayerInfo.Direction.north),
+                        Node.getNode(x, y, PlayerInfo.Direction.south)
+                };
+            }
+            int x, y;
+            for (int i = 0; i < 4; i ++) {
+                x = ret[i].x;
+                y = ret[i].y;
+                Position tipo = get(x, y);
+                if (tipo == Position.DANGER || tipo == Position.PAREDE || tipo == Position.UNKNOWN) {
+                    ret[i] = null;
                 }
             }
-            return null;
+            return ret;
         }
 
         public Path gerarCaminho() {
@@ -426,14 +534,21 @@ public class Field {
                 atual = anterior;
                 anterior = atual.anterior;
             }
+
+            if (acoes.size() == 0) { return null; }
+
             Path ret = new Path();
-            ret.acoes = acoes.toArray(ret.acoes);
+            ret.xDest = this.x;
+            ret.yDest = this.y;
+
+            ret.acoes = new Action[acoes.size()];
+            for (int i = 0; i < acoes.size(); i ++) { ret.acoes[i] = acoes.get(i); }
             ret.tamanho = ret.acoes.length;
             return ret;
         }
     }
 
     private static class CompararNode implements Comparator<Node> {
-        public int compare(Node n1, Node n2) { return n2.distanciaFinal - n1.distanciaFinal; }
+        public int compare(Node n1, Node n2) { return n1.distanciaFinal - n2.distanciaFinal; }
     }
 }
