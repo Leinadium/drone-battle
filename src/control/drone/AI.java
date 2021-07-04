@@ -6,6 +6,7 @@ import control.enums.Position;
 import control.enums.State;
 import control.interfaces.IBot;
 import control.map.Field;
+import control.map.Path;
 
 import java.util.Arrays;
 import java.util.Scanner;
@@ -22,7 +23,7 @@ public class AI {
 
     // para exploracao
     private State estadoAnterior;
-    public Field.Path pathAtual;
+    public Path pathAtual;
 
 
     public AI(Bot bot) {
@@ -33,6 +34,7 @@ public class AI {
 
     public Action pensarRoubado() {
         estadoAtual = calcularEstado();
+        atualizarMapa();
 
         String s = scanner.nextLine();
         if (s.equals("w")) { return Action.FRENTE; }
@@ -111,6 +113,7 @@ public class AI {
         if (ehVazio) {
             Field.removeSafe(x, y);
             Field.set(x, y, Position.EMPTY);
+            Field.shouldThereBeGoldOrPowerupHere(x, y, bot.getTick());
         }
     }
 
@@ -135,7 +138,8 @@ public class AI {
         }
 
         // verificando atacar
-        if (o.isInimigoFrente && e > 30 && ticksAtacando > 0) {
+        if (o.isInimigoFrente && e > 30 && ticksAtacando > 0
+                && !Field.hasParedeInFront(bot.getX(), bot.getY(), bot.getDir(), bot.getTick())) {
             return State.ATACAR;
         }
 
@@ -147,7 +151,7 @@ public class AI {
         }
 
         // verificando recuperar
-        if (e <= 30) {
+        if (e <= 50) {
             return State.RECARREGAR;
         }
 
@@ -167,6 +171,8 @@ public class AI {
     private void doAtacar() {
         ticksAtacando -= 1;
 
+        // TODO: verificar se sabe se tem parede no meio
+
         acaoAtual = Action.ATIRAR;
     }
 
@@ -181,7 +187,7 @@ public class AI {
      */
     private void doFugir() {
         if (tickFugir < 0) { tickFugir = 5; }
-        Field.Path caminho = null, temp;
+        Path caminho = null, temp;
 
         Observation o = bot.getUltimaObservacao();
         PlayerInfo.Direction dir = bot.getDir();
@@ -231,12 +237,22 @@ public class AI {
             return;
         }
 
+        if (estadoAnterior == State.COLETAR && !Field.mapaMudou && pathAtual.tamanho > 1) {
+            pathAtual.removerPrimeiraAcao();
+            acaoAtual = pathAtual.acoes[0];
+            // System.out.println(Arrays.toString(pathAtual.acoes));
+            return;
+        }
+
         // como foi rodado o hasOuroParaColetar, é possível pegar o path do buffer
         pathAtual = Field.getBufferPath();
-        if (pathAtual != null && pathAtual.acoes.length == 0) {
+        System.out.println(Arrays.toString(pathAtual.acoes));
+
+        if (pathAtual == null ) {
             acaoAtual = Action.NONE;
+            System.out.println("=========== FAZENDO NADA? =========");
         } else {
-            acaoAtual = pathAtual.acoes[0];
+            acaoAtual =  pathAtual.acoes[0];
         }
     }
 
@@ -254,7 +270,8 @@ public class AI {
 
         if (Field.hasPowerupParaColetar(bot.getX(), bot.getY(), bot.getDir(), bot.getTick())) {
             // pega o path que tem no buffer dele
-            acaoAtual = Field.getBufferPath().acoes[0];
+            pathAtual = Field.getBufferPath();
+            acaoAtual = pathAtual.acoes[0];
             return;
         }
         if (Field.hasPowerup()) {
@@ -276,14 +293,10 @@ public class AI {
 
         if (estadoAnterior == State.EXPLORAR && !Field.mapaMudou && pathAtual.tamanho > 1) {
             // retirando a primeira ação do path e pegando a proxima
+            pathAtual.removerPrimeiraAcao();
+            acaoAtual = pathAtual.acoes[0];
 
-            Action[] novaAcoes = new Action[pathAtual.tamanho - 1];
-            System.arraycopy(pathAtual.acoes, 1, novaAcoes, 0, pathAtual.tamanho-1);
-            pathAtual.acoes = novaAcoes;
-            pathAtual.tamanho -= 1;
-            acaoAtual = novaAcoes[0];
-
-            System.out.println(pathAtual.xDest + "/" + pathAtual.xDest + "/" + bot.getX()+ "/" + bot.getY());
+            // System.out.println(Arrays.toString(pathAtual.acoes));
 
             return;
         }
@@ -297,7 +310,7 @@ public class AI {
             acaoAtual = Action.NONE;
         }
         else {
-            System.out.println(pathAtual.xDest + "/" + pathAtual.xDest + "/" + bot.getX()+ "/" + bot.getY());
+            // System.out.println(Arrays.toString(pathAtual.acoes));
             acaoAtual = pathAtual.acoes[0];
         }
     }

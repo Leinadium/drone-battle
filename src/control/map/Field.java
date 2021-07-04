@@ -4,7 +4,6 @@ import java.util.*;
 
 import INF1771_GameClient.Dto.PlayerInfo;
 import control.Config;
-import control.enums.Action;
 import control.enums.Position;
 
 /**
@@ -93,7 +92,34 @@ public class Field {
         posicoesOuro.put(s, time);
     }
 
-    public static int getSizeSafe() {return posicoesSafe.size();}
+    /**
+     * Verifica se era para ter um ouro ou Powerup na posicao.
+     * Se era para ter, esse ouro ou powerup sera reiniciado, ou seja,
+     * o tempo de spawn será como se eu tivesse acabado de pegar
+     * @param x posicao x do ouro/powerup
+     * @param y posicao y do ouro/powerup
+     * @param tickAtual tickAtual do jogo
+     */
+    public static void shouldThereBeGoldOrPowerupHere(int x, int y, int tickAtual) {
+        String s = x + "-" + y;
+        boolean hasGold = posicoesOuro.containsKey(s);
+        boolean hasPowerup = posicoesPowerup.containsKey(s);
+
+        if (!(hasGold || hasPowerup)) {
+            return;     // nao tem nada registrado aqui
+        }
+
+        int tickAntigo;
+        if (hasGold) { tickAntigo = posicoesOuro.get(s); }
+        else { tickAntigo = posicoesPowerup.get(s); }
+
+        // era para ja ter nascido?
+        if (Config.ticksToBorn(tickAtual, tickAntigo) <= 0) {
+            // atualiza os dados
+            if (hasGold) { setOuro(x, y, tickAtual); }
+            else { setPowerup(x, y, tickAtual); }
+        }
+    }
 
     public static void setPowerup(int x, int y, int time) {
         String s = x + "-" + y;
@@ -213,7 +239,7 @@ public class Field {
             xDest = Integer.parseInt(temp[0]);
             yDest = Integer.parseInt(temp[1]);
             tickDest = entry.getValue();
-            ticksParaNascer = (Config.tempoSpawn / Config.timerRapido) - (tick - tickDest);
+            ticksParaNascer = Config.ticksToBorn(tick, tickDest);
             // System.out.println(entry.getKey() + '/' + ticksParaNascer);
 
             bufferPath = aStar(x, y, dir, xDest, yDest);
@@ -374,13 +400,48 @@ public class Field {
     }
 
     /**
-     * Classe para retorno do algoritmo de pathfinder
+     * Verifica se tem alguma parede na minha frente em até q blocos de distancia
+     * @param x Posicao x do drone
+     * @param y Posicao y do drone
+     * @param dir Direção do drone
+     * @param q Quantidade de blocos para serem verificados
+     * @return true se tiver alguma parede, false se não tiver ou não for conhecido
      */
-    public static class Path {
-        public Action[] acoes;
-        public int tamanho;
-        public int xDest;
-        public int yDest;
+    public static boolean hasParedeInFront(int x, int y, PlayerInfo.Direction dir, int q) {
+        int[][] coordsParaVerificar = new int[q][2];
+        switch (dir) {
+            case north -> {
+                for (int i = 1; i < q; i ++) {
+                    coordsParaVerificar[i-1][0] = x;
+                    coordsParaVerificar[i-1][1] = y - i;
+                }
+            }
+            case south -> {
+                for (int i = 1; i < q; i ++) {
+                    coordsParaVerificar[i-1][0] = x;
+                    coordsParaVerificar[i-1][1] = y + i;
+                }
+            }
+            case east -> {
+                for (int i = 1; i < q; i ++) {
+                    coordsParaVerificar[i-1][0] = x + i;
+                    coordsParaVerificar[i-1][1] = y;
+                }
+            }
+            case west -> {
+                for (int i = 1; i < q; i ++) {
+                    coordsParaVerificar[i-1][0] = x - i;
+                    coordsParaVerificar[i-1][1] = y;
+                }
+            }
+        }
+        // verificando os blocos
+        for (int []pos: coordsParaVerificar) {
+            if (get(pos[0], pos[1]) == Position.PAREDE) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static int manhattan(int x, int y, int x1, int y1) {
@@ -434,121 +495,8 @@ public class Field {
         return null;
     }
 
-    /**
-     * Classe para a implementacao do A*
-     */
-    private static class Node {
-
-        private static HashMap<String, Node> hashMap;
-
-        public static Node getNode(int x, int y, PlayerInfo.Direction dir) {
-            String s = x + "/" + y + "/" + dir;
-            if (hashMap.containsKey(s)) { return hashMap.get(s); }
-            Node n = new Node(x, y, dir);
-            hashMap.put(s, n);
-            return n;
-        }
-
-        public static void init() {hashMap = new HashMap<>();}
-
-        public int distanciaFinal;
-        public int ticksPercorridos = 1000000;
-        public Node anterior;
-
-        public int x;
-        public int y;
-        public PlayerInfo.Direction dir;
-        public Node(int x, int y, PlayerInfo.Direction dir) {
-            this.x = x; this.y = y; this.dir = dir;
-        }
-
-        /**
-         * Gera os vizinhos para o algoritmo do A*
-         * Retira Nodes invalidos
-         * @param n Node original
-         * @return array de nodes. Pode ter nodes nulos
-         */
-        private Node[] gerarVizinhos(Node n) {
-            Node[] ret;
-            switch (n.dir) {
-                case north, south -> ret = new Node[]{
-                        Node.getNode(x, y + 1, dir), Node.getNode(x, y - 1, dir),
-                        Node.getNode(x, y, PlayerInfo.Direction.east),
-                        Node.getNode(x, y, PlayerInfo.Direction.west)
-                };
-                default -> ret = new Node[]{
-                        Node.getNode(x + 1, y, dir), Node.getNode(x - 1, y, dir),
-                        Node.getNode(x, y, PlayerInfo.Direction.north),
-                        Node.getNode(x, y, PlayerInfo.Direction.south)
-                };
-            }
-            int x, y;
-            for (int i = 0; i < 4; i ++) {
-                x = ret[i].x;
-                y = ret[i].y;
-                Position tipo = get(x, y);
-                if (tipo == Position.DANGER || tipo == Position.PAREDE || tipo == Position.UNKNOWN) {
-                    ret[i] = null;
-                }
-            }
-            return ret;
-        }
-
-        public Path gerarCaminho() {
-            Node atual = this;
-            Node anterior = this.anterior;
-
-            ArrayList<Action> acoes = new ArrayList<>();
-            while (anterior != null) {
-                if (atual.dir == anterior.dir) {
-                    switch (atual.dir) {
-                        case north -> {
-                            if (atual.y > anterior.y) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
-                        }
-                        case south -> {
-                            if (atual.y < anterior.y) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
-                        }
-                        case west -> {
-                            if (atual.x > anterior.x) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
-                        }
-                        case east -> {
-                            if (atual.x < anterior.x) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
-                        }
-                    }
-                } else {
-                    switch (atual.dir) {
-                        case north -> {
-                            if (anterior.dir == PlayerInfo.Direction.east) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
-                        }
-                        case south -> {
-                            if (anterior.dir == PlayerInfo.Direction.west) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
-                        }
-                        case east -> {
-                            if (anterior.dir == PlayerInfo.Direction.south) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
-                        }
-                        case west -> {
-                            if (anterior.dir == PlayerInfo.Direction.north) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
-                        }
-                    }
-                }
-                atual = anterior;
-                anterior = atual.anterior;
-            }
-
-            if (acoes.size() == 0) { return null; }
-
-            Path ret = new Path();
-            ret.xDest = this.x;
-            ret.yDest = this.y;
-
-            ret.acoes = new Action[acoes.size()];
-            for (int i = 0; i < acoes.size(); i ++) { ret.acoes[i] = acoes.get(i); }
-            ret.tamanho = ret.acoes.length;
-            return ret;
-        }
-    }
-
     private static class CompararNode implements Comparator<Node> {
-        public int compare(Node n1, Node n2) { return n1.distanciaFinal - n2.distanciaFinal; }
+        public int compare(Node n1, Node n2) {
+            return (n1.distanciaFinal + n1.ticksPercorridos) - (n2.distanciaFinal + n2.ticksPercorridos); }
     }
 }

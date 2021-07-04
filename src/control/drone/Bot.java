@@ -19,6 +19,11 @@ import javax.swing.*;
 import java.util.*;
 
 public class Bot implements Runnable, IBot {
+
+    public static int tickAtual;
+    public static int ping;
+    public static boolean semaforo;
+
     public HandleClient client;                             // client para conexao
     public Map<Long, PlayerInfo> listaJogadores;            // lista dos jogadores
     public List<ShotInfo> listaDisparos;                    // lista de disparos
@@ -37,7 +42,7 @@ public class Bot implements Runnable, IBot {
     public PlayerInfo.State state;
     public long score;
     public int energy;
-    public int ping;
+    public int thinkingTime;
 
     public JFrame tela;
 
@@ -148,12 +153,15 @@ public class Bot implements Runnable, IBot {
 
                     // pede as proximas coisas
                     limparObservacaoes();
+
+                    Bot.semaforo = true;
                     this.sender.pedirObservacao();
                     this.sender.pedirStatus();
-
-                    this.ping = (int) (System.currentTimeMillis() - tempoExec);
-
                     this.sender.pedirStatusGame();
+
+                    this.thinkingTime = (int) (System.currentTimeMillis() - tempoExec);
+                    Bot.tickAtual = (int) System.currentTimeMillis();
+
                     dormir(Config.timerRapido);
                 }
                 case dead, ready, gameover -> {

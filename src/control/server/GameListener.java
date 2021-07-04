@@ -23,29 +23,40 @@ public class GameListener implements CommandListener {
      * @param observations String na forma "obs,obs,obs,obs...obs,"
      */
     private void parseObservations(String observations) {
-        if (observations.trim().equals("")) { return; }
+        if (!observations.trim().equals("")) {
+            // cria uma lista contendo a string de cada observacao
+            String[] lista = observations.trim().split(",");
+            String[] temp;
 
-        // cria uma lista contendo a string de cada observacao
-        String[] lista = observations.trim().split(",");
-        String[] temp;
+            // adiciona cada observacao de acordo com o nome no enum
+            for (String o : lista) {
+                // verificando a observaçao de inimigo (enemy#X)
+                temp = o.split("#");
+                if (temp.length > 1) {
+                    this.bot.ultimaObservacao.isInimigoFrente = true;
+                    this.bot.ultimaObservacao.distanciaInimigoFrente = Integer.parseInt(temp[1]);
+                }
 
-        // adiciona cada observacao de acordo com o nome no enum
-        for (String o: lista) {
-            // verificando a observaçao de inimigo (enemy#X)
-            temp = o.split("#");
-            if (temp.length > 1) {
-                this.bot.ultimaObservacao.isInimigoFrente = true;
-                this.bot.ultimaObservacao.distanciaInimigoFrente = Integer.parseInt(temp[1]);
+                if (o.equals("blocked")) {
+                    this.bot.ultimaObservacao.isParede = true;
+                }
+                if (o.equals("steps")) {
+                    this.bot.ultimaObservacao.isInimigo = true;
+                }
+                if (o.equals("breeze")) {
+                    this.bot.ultimaObservacao.isBuraco = true;
+                }
+                if (o.equals("flash")) {
+                    this.bot.ultimaObservacao.isFlash = true;
+                }
+                if (o.equals("blueLight")) {
+                    this.bot.ultimaObservacao.isTesouro = true;
+                }
+                if (o.equals("redLight")) {
+                    this.bot.ultimaObservacao.isPowerup = true;
+                }
             }
-
-            if (o.equals("blocked")) { this.bot.ultimaObservacao.isParede = true; }
-            if (o.equals("steps")) { this.bot.ultimaObservacao.isInimigo = true; }
-            if (o.equals("breeze")) { this.bot.ultimaObservacao.isBuraco = true; }
-            if (o.equals("flash")) { this.bot.ultimaObservacao.isFlash = true; }
-            if (o.equals("blueLight")) { this.bot.ultimaObservacao.isTesouro = true; }
-            if (o.equals("redLight")) { this.bot.ultimaObservacao.isPowerup = true; }
         }
-
     }
 
 
@@ -186,21 +197,25 @@ public class GameListener implements CommandListener {
     }
 
     public void receiveCommand(String[] cmd) {
-        if (cmd.length == 0) { return; }
 
-        switch (cmd[0]) {
-            case "o" -> parseObservations(cmd[1]);
-            case "s" -> parseStatus(cmd);
-            case "player" -> parsePlayer(cmd);
-            case "g" -> parseGameStatus(cmd);
-            case "u" -> parseScoreboard(cmd);
-            case "notification" -> parseNotification(cmd[1]);
-            case "hello" -> parsePlayerNew(cmd[1]);
-            case "goodbye" -> parsePlayerLeft(cmd[1]);
-            case "changename" -> parseChangeName(cmd[1], cmd[2]);
-            case "h" -> parseHit(cmd[1]);
-            case "d" -> parseDamage(cmd[1]);
+        Bot.ping = (int) System.currentTimeMillis() - Bot.tickAtual;
+
+        if (cmd.length > 0) {
+            switch (cmd[0]) {
+                case "o" -> parseObservations(cmd[1]);
+                case "s" -> parseStatus(cmd);
+                case "player" -> parsePlayer(cmd);
+                case "g" -> parseGameStatus(cmd);
+                case "u" -> parseScoreboard(cmd);
+                case "notification" -> parseNotification(cmd[1]);
+                case "hello" -> parsePlayerNew(cmd[1]);
+                case "goodbye" -> parsePlayerLeft(cmd[1]);
+                case "changename" -> parseChangeName(cmd[1], cmd[2]);
+                case "h" -> parseHit(cmd[1]);
+                case "d" -> parseDamage(cmd[1]);
+            }
         }
+
 
     }
 }

@@ -17,9 +17,9 @@ public class InfoPanel extends JPanel {
     JLabel pontuacao;
 
     JLabel stateText;
-    JLabel ping;
+    JLabel processTime;
     JLabel acaoAtual;
-    JLabel qtdSafe;
+    JLabel ping;
 
     JLabel isInimigo;
     JLabel isBuraco;
@@ -60,9 +60,9 @@ public class InfoPanel extends JPanel {
         stateText.setAlignmentX(Component.CENTER_ALIGNMENT);
         add(stateText);
 
-        ping = new JLabel();
-        ping.setAlignmentX(Component.CENTER_ALIGNMENT);
-        add(ping);
+        processTime = new JLabel();
+        processTime.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(processTime);
 
 
         acaoAtual = new JLabel();
@@ -70,9 +70,9 @@ public class InfoPanel extends JPanel {
         add(acaoAtual);
 
 
-        qtdSafe = new JLabel();
-        qtdSafe.setAlignmentX(Component.CENTER_ALIGNMENT);
-        add(qtdSafe);
+        ping = new JLabel();
+        ping.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(ping);
 
         isInimigo = new JLabel();
         isInimigo.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -121,9 +121,9 @@ public class InfoPanel extends JPanel {
         posY.setText("Y: " + this.bot.getY());
         energia.setText("E: " + this.bot.getEnergy());
         stateText.setText("S: " + this.ai.estadoAtual);
-        ping.setText("ms: " + this.bot.ping);
+        processTime.setText("tt: " + this.bot.thinkingTime);
         acaoAtual.setText("acao: " + this.ai.acaoAtual);
-        qtdSafe.setText("safes: " + Field.getSizeSafe());
+        ping.setText("lag: " + Bot.ping);
 
         isInimigo.setText("isInimigo: " + this.bot.ultimaObservacao.isInimigo);
         isBuraco.setText("isBuraco: " + this.bot.ultimaObservacao.isBuraco);
