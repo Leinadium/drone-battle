@@ -192,15 +192,22 @@ public class GameListener implements CommandListener {
      */
     private void parseDamage(String shooter) {
         String s = String.format("Fui atingido por [%s]", shooter);
+
+        this.bot.verificarHack(shooter);
+        this.bot.ultimoAcerto = s;
+        this.bot.ultimoTickAcerto = (int) System.currentTimeMillis();
+
         this.bot.log.add(s);
         this.bot.ultimaObservacao.isDano = true;
     }
 
     public void receiveCommand(String[] cmd) {
 
-        Bot.ping = (int) System.currentTimeMillis() - Bot.tickAtual;
+        Bot.ping = System.currentTimeMillis() - Bot.tickAtual;
 
-        if (cmd[0].equals("o")) parseObservations(cmd[1]);
+        if (cmd[0].equals("o")) {
+            if (cmd.length > 1) parseObservations(cmd[1]);
+        }
         else if (cmd[0].equals("s")) parseStatus(cmd);
         else if (cmd[0].equals("player")) parsePlayer(cmd);
         else if (cmd[0].equals("g")) parseGameStatus(cmd);
@@ -211,8 +218,5 @@ public class GameListener implements CommandListener {
         else if (cmd[0].equals("changename")) parseChangeName(cmd[1], cmd[2]);
         else if (cmd[0].equals("h")) parseHit(cmd[1]);
         else if (cmd[0].equals("d")) parseDamage(cmd[1]);
-
-
-
     }
 }

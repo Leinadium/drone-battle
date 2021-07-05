@@ -76,7 +76,7 @@ class GamePanel extends JPanel {
                 g2d.setStroke(new BasicStroke(4));
                 for (Action a: this.bot.ai.pathAtual.acoes) {
                     switch (a) {
-                        case ESQUERDA -> {
+                        case LEFT -> {
                             switch (bdir) {
                                 case north -> bdir = PlayerInfo.Direction.west;
                                 case south -> bdir = PlayerInfo.Direction.east;
@@ -84,7 +84,7 @@ class GamePanel extends JPanel {
                                 case west -> bdir = PlayerInfo.Direction.south;
                             }
                         }
-                        case DIREITA -> {
+                        case RIGHT -> {
                             switch (bdir) {
                                 case north -> bdir = PlayerInfo.Direction.east;
                                 case south -> bdir = PlayerInfo.Direction.west;
@@ -92,7 +92,7 @@ class GamePanel extends JPanel {
                                 case west -> bdir = PlayerInfo.Direction.north;
                             }
                         }
-                        case FRENTE -> {
+                        case FRONT -> {
                             switch (bdir) {
                                 case north -> {
                                     g2d.drawLine((bx - xDrone + 4)*TAM + TAM / 2, (by - yDrone + 4)*TAM + TAM/2,
@@ -116,7 +116,7 @@ class GamePanel extends JPanel {
                                 }
                             }
                         }
-                        case TRAS -> {
+                        case BACK -> {
                             switch (bdir) {
                                 case south -> {
                                     g2d.drawLine((bx - xDrone + 4)*TAM + TAM / 2, (by - yDrone + 4)*TAM + TAM/2,

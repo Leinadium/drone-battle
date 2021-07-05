@@ -97,31 +97,31 @@ class Node {
             if (atual.dir == anterior.dir) {
                 switch (atual.dir) {
                     case north -> {
-                        if (atual.y > anterior.y) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
+                        if (atual.y > anterior.y) { acoes.add(0, Action.BACK); } else { acoes.add(0, Action.FRONT); }
                     }
                     case south -> {
-                        if (atual.y < anterior.y) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
+                        if (atual.y < anterior.y) { acoes.add(0, Action.BACK); } else { acoes.add(0, Action.FRONT); }
                     }
                     case west -> {
-                        if (atual.x > anterior.x) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
+                        if (atual.x > anterior.x) { acoes.add(0, Action.BACK); } else { acoes.add(0, Action.FRONT); }
                     }
                     case east -> {
-                        if (atual.x < anterior.x) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
+                        if (atual.x < anterior.x) { acoes.add(0, Action.BACK); } else { acoes.add(0, Action.FRONT); }
                     }
                 }
             } else {
                 switch (atual.dir) {
                     case north -> {
-                        if (anterior.dir == PlayerInfo.Direction.east) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
+                        if (anterior.dir == PlayerInfo.Direction.east) {acoes.add(0, Action.LEFT);} else { acoes.add(0, Action.RIGHT);}
                     }
                     case south -> {
-                        if (anterior.dir == PlayerInfo.Direction.west) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
+                        if (anterior.dir == PlayerInfo.Direction.west) {acoes.add(0, Action.LEFT);} else { acoes.add(0, Action.RIGHT);}
                     }
                     case east -> {
-                        if (anterior.dir == PlayerInfo.Direction.south) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
+                        if (anterior.dir == PlayerInfo.Direction.south) {acoes.add(0, Action.LEFT);} else { acoes.add(0, Action.RIGHT);}
                     }
                     case west -> {
-                        if (anterior.dir == PlayerInfo.Direction.north) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
+                        if (anterior.dir == PlayerInfo.Direction.north) {acoes.add(0, Action.LEFT);} else { acoes.add(0, Action.RIGHT);}
                     }
                 }
             }

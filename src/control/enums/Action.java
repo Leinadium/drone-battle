@@ -1,11 +1,11 @@
 package control.enums;
 
 public enum Action {
-    FRENTE,             // andar para frente
-    TRAS,               // andar para tras
-    ESQUERDA,           // virar a esquerda
-    DIREITA,            // virar a direita
-    PEGAR,              // pegar do chao
-    ATIRAR,             // atirar para a frente
+    FRONT,              // andar para frente
+    BACK,               // andar para tras
+    LEFT,               // virar a esquerda
+    RIGHT,              // virar a direita
+    TAKE,               // pegar do chao
+    SHOOT,              // atirar para a frente
     NONE,               // nao fazer nada
 }

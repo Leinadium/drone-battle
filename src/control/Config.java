@@ -6,11 +6,12 @@ public class Config {
 
     public static final String nomeJogador = "Leinadium";
     public static final String url = "atari.icad.puc-rio.br";
-    public static final int timerDefault = 1000;
-    public static final int timerRapido = 200;
+    // public static final String urlTeste = "atari.icad.puc-rio.br";
+    public static final int timerLento = 1000;
+    public static final int timerNormal = 180;
     public static final int timerMinimo = 100;
     public static final Color corDefault = new Color(23, 179, 132);
-    public static final int tempoSpawn = 15000 + 500;
+    public static final int tempoSpawn = 15000 + 2 * timerNormal;
 
     public static Color convertFromString(String s) {
         String[] p = s.split("(,)|(])");
@@ -30,7 +31,7 @@ public class Config {
      * @return a quantidade de ticks para nascer
      */
     public static int ticksToBorn(int tickNow, int tickOld) {
-        return Config.tempoSpawn / Config.timerRapido - (tickNow - tickOld);
+        return Config.tempoSpawn / Config.timerNormal - (tickNow - tickOld);
     }
 
     private Config() {}

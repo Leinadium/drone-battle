@@ -22,7 +22,7 @@ public class Sender {
      * Envia a mensagem do comando para o client
      * @param s Mensagem a ser enviada
      */
-    private void enviarMensagem(String s) {
+    public void enviarMensagem(String s) {
         if (s.trim().length() > 0) {
             this.client.sendSay(s);
         }
@@ -34,12 +34,12 @@ public class Sender {
      */
     public void enviarAction(Action action) {
         switch (action) {
-            case DIREITA -> client.sendTurnRight();
-            case ESQUERDA -> client.sendTurnLeft();
-            case FRENTE -> client.sendForward();
-            case TRAS -> client.sendBackward();
-            case PEGAR -> client.sendGetItem();
-            case ATIRAR -> client.sendShoot();
+            case RIGHT -> client.sendTurnRight();
+            case LEFT -> client.sendTurnLeft();
+            case FRONT -> client.sendForward();
+            case BACK -> client.sendBackward();
+            case TAKE -> client.sendGetItem();
+            case SHOOT -> client.sendShoot();
         }
     }
 
@@ -80,6 +80,5 @@ public class Sender {
     public void pedirCor(Color cor) {
         this.client.sendColor(cor);
     }
-
 
 }

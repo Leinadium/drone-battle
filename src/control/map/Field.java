@@ -41,6 +41,16 @@ public class Field {
         posicoesPowerup.replaceAll((s, v) -> v + ms);
     }
 
+    public static void setForce(int x, int y, Position tipoCasa) {
+        String s = x + "-" + y;
+        mapa.put(s, tipoCasa);
+        if (tipoCasa == Position.OURO) {
+            setOuro(x, y);
+        } else if (tipoCasa == Position.POWERUP) {
+            setPowerup(x, y);
+        }
+    }
+
     public static void set(int x, int y, Position tipoCasa) {
 
         Position get = get(x, y);
@@ -210,11 +220,12 @@ public class Field {
      * Coloca o path para o powerup mais proximo no bufferPath, se houver
      * Se nao, bufferpath sera nulo
      */
-    public static void powerupMaisProximo(int x, int y, PlayerInfo.Direction dir) {
+    public static int[] powerupMaisProximo(int x, int y, PlayerInfo.Direction dir) {
         Path pathTemp;
         int xTemp, yTemp;
         String[] sTemp;
         bufferPath = null;
+        int xRes = -1, yRes = -1;
         for (String s: posicoesPowerup.keySet()) {
             sTemp = s.split("-");
             xTemp = Integer.parseInt(sTemp[0]);
@@ -225,7 +236,14 @@ public class Field {
 
             if (bufferPath == null || pathTemp.tamanho < bufferPath.tamanho) {
                 bufferPath = pathTemp;
+                xRes = xTemp;
+                yRes = yTemp;
             }
+        }
+        if (xRes != -1) {
+            return new int[] {xRes, yRes};
+        } else {
+            return null;
         }
 
     }
@@ -243,7 +261,7 @@ public class Field {
             xDest = Integer.parseInt(temp[0]);
             yDest = Integer.parseInt(temp[1]);
             tickDest = entry.getValue();
-            ticksParaNascer = (Config.tempoSpawn - tickDest) / Config.timerRapido;
+            ticksParaNascer = (Config.tempoSpawn - tickDest) / Config.timerNormal;
             // System.out.println(entry.getKey() + '/' + ticksParaNascer);
 
             bufferPath = aStar(x, y, dir, xDest, yDest);

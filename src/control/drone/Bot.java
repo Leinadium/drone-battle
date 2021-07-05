@@ -12,7 +12,6 @@ import control.server.ConnectionListener;
 import control.server.GameListener;
 import control.server.Log;
 import control.server.Sender;
-import control.enums.State;
 
 import graphics.View;
 
@@ -21,8 +20,8 @@ import java.util.*;
 
 public class Bot implements Runnable, IBot {
 
-    public static int tickAtual;
-    public static int ping = 0;
+    public static long tickAtual;
+    public static long ping = 0;
 
     public HandleClient client;                             // client para conexao
     public Map<Long, PlayerInfo> listaJogadores;            // lista dos jogadores
@@ -43,6 +42,9 @@ public class Bot implements Runnable, IBot {
     public long score;
     public int energy;
     public int thinkingTime;
+
+    public String ultimoAcerto;
+    public int ultimoTickAcerto;
 
     public JFrame tela;
 
@@ -83,7 +85,7 @@ public class Bot implements Runnable, IBot {
         config();
     }
 
-    public void dormir(int ms) {
+    public void sleep(int ms) {
         Field.doTick(ms);
         if (ms < 0) { return; }
         try {
@@ -121,63 +123,76 @@ public class Bot implements Runnable, IBot {
     public Observation getUltimaObservacao() { return this.ultimaObservacao; }
     /* FIM DAS IMPLEMENTACOES DO IBOT */
 
+    public void verificarHack(String acertoAtual) {
+        int tempo = (int) System.currentTimeMillis() - ultimoTickAcerto;
+        if (acertoAtual.equals(this.ultimoAcerto) && tempo < Config.timerMinimo ) {
+            this.sender.enviarMensagem(String.format("Hack? %s me acertou em %d ms de diferenca", ultimoAcerto, tempo));
+        }
+    }
+
+
     /**
      * Roda o bot
      */
+    @Override
     public void run() {
         int timer = 0;
         long tempoExec;
         boolean emPartida = false;
+        Action acao = Action.NONE;
 
-        dormir(Config.timerDefault);
+        // sleep(Config.timerLento);
 
         while (true) {
-            switch (state) {
-                case game -> {
-                    // caso seja o inicio da partida
-                    if (!emPartida) {
-                        this.tick = 0;
-                        emPartida = true;
-                        this.sender.pedirStatus();
-                        this.sender.pedirObservacao();
-                        dormir(Config.timerRapido);
-                    }
-                    this.tick += 1;
-                    tempoExec = System.currentTimeMillis();
+            if (state == PlayerInfo.State.game) {
 
-                    // faz a acao
-                    Action acao = this.ai.pensar();
-                    this.sender.enviarAction(acao);
+                // dorme
+                if (acao == Action.SHOOT) sleep(Config.timerMinimo - this.thinkingTime);
+                else sleep(Config.timerNormal - this.thinkingTime);
 
-                    // atualiza as coisas
-                    this.tela.repaint();
-
-                    // pede as proximas coisas
-                    limparObservacaoes();
-
-                    this.sender.pedirObservacao();
+                // caso seja o inicio da partida
+                if (!emPartida) {
+                    this.tick = 0;
+                    emPartida = true;
                     this.sender.pedirStatus();
-                    this.sender.pedirStatusGame();
-
-                    this.thinkingTime = (int) (System.currentTimeMillis() - tempoExec);
-                    Bot.tickAtual = (int) System.currentTimeMillis();
-
-                    dormir(Config.timerRapido);
+                    this.sender.pedirObservacao();
+                    sleep(Config.timerNormal);
                 }
-                case dead, ready, gameover -> {
-                    emPartida = false;
-                    Field.init();
-                    if (timer == 5) {
-                        this.sender.pedirScoreboard();
-                        this.sender.pedirStatus();
-                        exibirScore();
-                        timer = 0;
-                    }
-                    timer += 1;
 
-                    this.sender.pedirStatusGame();
-                    dormir(Config.timerDefault);
+                // atualiza as variaveis de contagem
+                this.tick += 1;
+                tempoExec = System.currentTimeMillis();
+
+                // faz a acao
+                acao = this.ai.pensar();
+                this.sender.enviarAction(acao);
+
+                // pede as proximas coisas
+                limparObservacaoes();
+                this.sender.pedirObservacao();
+                this.sender.pedirStatus();
+                this.sender.pedirStatusGame();
+                Bot.tickAtual = System.currentTimeMillis();
+
+                // atualiza as coisas
+                this.tela.repaint();
+                this.thinkingTime = (int) (System.currentTimeMillis() - tempoExec);
+            } else {
+                sleep(Config.timerLento);
+                if (emPartida) {
+                    this.sender.enviarMensagem("gg");
                 }
+
+                emPartida = false;
+                Field.init();
+                if (timer == 5) {
+                    this.sender.pedirScoreboard();
+                    exibirScore();
+                    timer = 0;
+                }
+                timer += 1;
+
+                this.sender.pedirStatusGame();
             }
             this.log.printLast();
         }
