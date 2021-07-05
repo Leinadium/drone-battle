@@ -36,6 +36,11 @@ public class Field {
         posicoesSafe = new HashMap<>();
     }
 
+    public static void doTick(int ms) {
+        posicoesOuro.replaceAll((s, v) -> v + ms);
+        posicoesPowerup.replaceAll((s, v) -> v + ms);
+    }
+
     public static void set(int x, int y, Position tipoCasa) {
 
         Position get = get(x, y);
@@ -87,9 +92,9 @@ public class Field {
         return Objects.requireNonNullElse(ret, Position.UNKNOWN);
     }
 
-    public static void setOuro(int x, int y, int time) {
+    public static void setOuro(int x, int y) {
         String s = x + "-" + y;
-        posicoesOuro.put(s, time);
+        posicoesOuro.put(s, 0);
     }
 
     /**
@@ -98,9 +103,8 @@ public class Field {
      * o tempo de spawn será como se eu tivesse acabado de pegar
      * @param x posicao x do ouro/powerup
      * @param y posicao y do ouro/powerup
-     * @param tickAtual tickAtual do jogo
      */
-    public static void shouldThereBeGoldOrPowerupHere(int x, int y, int tickAtual) {
+    public static void shouldThereBeGoldOrPowerupHere(int x, int y) {
         String s = x + "-" + y;
         boolean hasGold = posicoesOuro.containsKey(s);
         boolean hasPowerup = posicoesPowerup.containsKey(s);
@@ -109,21 +113,21 @@ public class Field {
             return;     // nao tem nada registrado aqui
         }
 
-        int tickAntigo;
-        if (hasGold) { tickAntigo = posicoesOuro.get(s); }
-        else { tickAntigo = posicoesPowerup.get(s); }
+        int tempo;
+        if (hasGold) { tempo = posicoesOuro.get(s); }
+        else { tempo = posicoesPowerup.get(s); }
 
         // era para ja ter nascido?
-        if (Config.ticksToBorn(tickAtual, tickAntigo) <= 0) {
+        if (tempo >= Config.tempoSpawn) {
             // atualiza os dados
-            if (hasGold) { setOuro(x, y, tickAtual); }
-            else { setPowerup(x, y, tickAtual); }
+            if (hasGold) { setOuro(x, y); }
+            else { setPowerup(x, y); }
         }
     }
 
-    public static void setPowerup(int x, int y, int time) {
+    public static void setPowerup(int x, int y) {
         String s = x + "-" + y;
-        posicoesPowerup.put(s, time);
+        posicoesPowerup.put(s, 0);
     }
 
     private static void setSafe(int x, int y) {
@@ -239,7 +243,7 @@ public class Field {
             xDest = Integer.parseInt(temp[0]);
             yDest = Integer.parseInt(temp[1]);
             tickDest = entry.getValue();
-            ticksParaNascer = Config.ticksToBorn(tick, tickDest);
+            ticksParaNascer = (Config.tempoSpawn - tickDest) / Config.timerRapido;
             // System.out.println(entry.getKey() + '/' + ticksParaNascer);
 
             bufferPath = aStar(x, y, dir, xDest, yDest);
@@ -305,7 +309,7 @@ public class Field {
             y = Integer.parseInt(temp[1]);
 
             // distanciaBlocoPonto = (int) Math.pow(manhattan(x, y, xPonto, yPonto), 2);
-            distanciaBlocoPonto = (int) (Math.pow(x - xPonto, 2) + Math.pow(y - yPonto, 2));
+            distanciaBlocoPonto = 2 * (int) Math.sqrt((Math.pow(x - xPonto, 2) + Math.pow(y - yPonto, 2)));
 
             path = aStar(xDrone, yDrone, dirDrone, x, y);
             if (path == null) {continue;}
@@ -471,7 +475,7 @@ public class Field {
         openSet.add(nodeInicial);
 
         Node node;
-        int novoTick;
+        int novoTick, custo;
         while (!openSet.isEmpty()) {
             node = openSet.poll();
             if (node.x == xDest && node.y == yDest) {
@@ -481,10 +485,16 @@ public class Field {
 
             for (Node viz: vizinhos) {
                 if (viz == null) { continue; }
-                novoTick = node.ticksPercorridos + 1;
+
+                custo = 1;
+                if (viz.ehAtras) custo += 1.5;
+                if (viz.ehSafe) custo *= 0.8;
+
+
+                novoTick = node.ticksPercorridos + custo;
                 if (novoTick < viz.ticksPercorridos) {
                     viz.anterior = node;
-                    viz.ticksPercorridos = node.ticksPercorridos + 1;
+                    viz.ticksPercorridos = node.ticksPercorridos + custo;
                     viz.distanciaFinal = manhattan(viz.x, viz.y, xDest, yDest);
                     if (!openSet.contains(viz)) {
                         openSet.add(viz);

@@ -64,7 +64,7 @@ public class AI {
             case RECARREGAR -> doRecarregar();
         }
 
-        if (estadoAtual != State.ATACAR) {ticksAtacando = 10;}
+        if (estadoAtual != State.ATACAR) {ticksAtacando = 0;}
 
         return acaoAtual;
     }
@@ -93,13 +93,13 @@ public class AI {
         if (o.isPowerup) {
             Field.removeSafe(x, y);
             Field.set(x, y, Position.POWERUP);
-            Field.setPowerup(x, y, this.bot.getTick());
+            Field.setPowerup(x, y);
             ehVazio = false;
         }
         if (o.isTesouro) {
             Field.removeSafe(x, y);
             Field.set(x, y, Position.OURO);
-            Field.setOuro(x, y, this.bot.getTick());
+            Field.setOuro(x, y);
             ehVazio = false;
         }
 
@@ -113,7 +113,7 @@ public class AI {
         if (ehVazio) {
             Field.removeSafe(x, y);
             Field.set(x, y, Position.EMPTY);
-            Field.shouldThereBeGoldOrPowerupHere(x, y, bot.getTick());
+            Field.shouldThereBeGoldOrPowerupHere(x, y);
         }
     }
 
@@ -131,6 +131,11 @@ public class AI {
             return State.COLETAR;
         }
 
+        // outra excecao, se tiver um powerup e tiver perdido um pouco de vida, pega
+        if (o.isPowerup && e <= 70) {
+            return State.RECARREGAR;
+        }
+
         // outra excecao, ele tem que fugir 5 vezes
         if (tickFugir > 0) {
             tickFugir -= 1;
@@ -138,8 +143,8 @@ public class AI {
         }
 
         // verificando atacar
-        if (o.isInimigoFrente && e > 30 && ticksAtacando > 0
-                && !Field.hasParedeInFront(bot.getX(), bot.getY(), bot.getDir(), bot.getTick())) {
+        if (o.isInimigoFrente && e > 30 && ticksAtacando < 10
+                && !Field.hasParedeInFront(bot.getX(), bot.getY(), bot.getDir(), o.distanciaInimigoFrente)) {
             return State.ATACAR;
         }
 
@@ -169,10 +174,7 @@ public class AI {
      * Neste caso, atira uma vez
      */
     private void doAtacar() {
-        ticksAtacando -= 1;
-
-        // TODO: verificar se sabe se tem parede no meio
-
+        ticksAtacando += 1;
         acaoAtual = Action.ATIRAR;
     }
 
@@ -199,7 +201,11 @@ public class AI {
         }
         // segundo caso
         else if (o.isInimigo) {
-            area = Field.coords5x5Around(bot.getX(), bot.getY());
+            // area = Field.coords5x5Around(bot.getX(), bot.getY());
+            // simplesmente olha para o lado
+            acaoAtual = Action.ESQUERDA;
+            return;
+
         }
         // terceiro caso
         else {
@@ -268,18 +274,34 @@ public class AI {
             return;
         }
 
+        // cache
+        if (estadoAnterior == State.RECARREGAR && !Field.mapaMudou && pathAtual.tamanho > 1) {
+            pathAtual.removerPrimeiraAcao();
+            acaoAtual = pathAtual.acoes[0];
+            return;
+        }
+
+        // procurando algum powerup pronto
         if (Field.hasPowerupParaColetar(bot.getX(), bot.getY(), bot.getDir(), bot.getTick())) {
             // pega o path que tem no buffer dele
             pathAtual = Field.getBufferPath();
             acaoAtual = pathAtual.acoes[0];
             return;
         }
+        // procurando algum powerup para explorar em volta
         if (Field.hasPowerup()) {
+
+            // TODO: pegar as coordenadas do lugar em vez de fazer o path inteiro
             Field.powerupMaisProximo(bot.getX(), bot.getY(), bot.getDir());
-            if (Field.getBufferPath() != null) {
-                acaoAtual = Field.getBufferPath().acoes[0];
-            }
+            int xx, yy;
+            int[] dest;
+            xx = Field.getBufferPath().xDest;       // crashou
+            yy = Field.getBufferPath().yDest;
+            dest = Field.melhorBlocoUsandoPontoFocal(bot.getX(), bot.getY(),bot.getDir(), xx, yy);
+            pathAtual = Field.aStar(bot.getX(), bot.getY(), bot.getDir(), dest[0], dest[1]);
+            if (pathAtual != null) acaoAtual = pathAtual.acoes[0];
         }
+        // se nao tiver nenhum powerup
         else {
             doExplorar();
         }

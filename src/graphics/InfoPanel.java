@@ -120,6 +120,7 @@ public class InfoPanel extends JPanel {
         posX.setText("X: " + this.bot.getX());
         posY.setText("Y: " + this.bot.getY());
         energia.setText("E: " + this.bot.getEnergy());
+        pontuacao.setText("P: " + this.bot.score);
         stateText.setText("S: " + this.ai.estadoAtual);
         processTime.setText("tt: " + this.bot.thinkingTime);
         acaoAtual.setText("acao: " + this.ai.acaoAtual);

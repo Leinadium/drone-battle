@@ -12,6 +12,7 @@ import control.server.ConnectionListener;
 import control.server.GameListener;
 import control.server.Log;
 import control.server.Sender;
+import control.enums.State;
 
 import graphics.View;
 
@@ -21,8 +22,7 @@ import java.util.*;
 public class Bot implements Runnable, IBot {
 
     public static int tickAtual;
-    public static int ping;
-    public static boolean semaforo;
+    public static int ping = 0;
 
     public HandleClient client;                             // client para conexao
     public Map<Long, PlayerInfo> listaJogadores;            // lista dos jogadores
@@ -84,6 +84,7 @@ public class Bot implements Runnable, IBot {
     }
 
     public void dormir(int ms) {
+        Field.doTick(ms);
         if (ms < 0) { return; }
         try {
             Thread.sleep(ms);
@@ -154,7 +155,6 @@ public class Bot implements Runnable, IBot {
                     // pede as proximas coisas
                     limparObservacaoes();
 
-                    Bot.semaforo = true;
                     this.sender.pedirObservacao();
                     this.sender.pedirStatus();
                     this.sender.pedirStatusGame();

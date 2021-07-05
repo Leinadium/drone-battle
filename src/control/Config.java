@@ -7,9 +7,10 @@ public class Config {
     public static final String nomeJogador = "Leinadium";
     public static final String url = "atari.icad.puc-rio.br";
     public static final int timerDefault = 1000;
-    public static final int timerRapido = 170;
+    public static final int timerRapido = 200;
+    public static final int timerMinimo = 100;
     public static final Color corDefault = new Color(23, 179, 132);
-    public static final int tempoSpawn = 15000;
+    public static final int tempoSpawn = 15000 + 500;
 
     public static Color convertFromString(String s) {
         String[] p = s.split("(,)|(])");

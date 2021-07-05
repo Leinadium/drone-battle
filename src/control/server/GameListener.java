@@ -200,21 +200,18 @@ public class GameListener implements CommandListener {
 
         Bot.ping = (int) System.currentTimeMillis() - Bot.tickAtual;
 
-        if (cmd.length > 0) {
-            switch (cmd[0]) {
-                case "o" -> parseObservations(cmd[1]);
-                case "s" -> parseStatus(cmd);
-                case "player" -> parsePlayer(cmd);
-                case "g" -> parseGameStatus(cmd);
-                case "u" -> parseScoreboard(cmd);
-                case "notification" -> parseNotification(cmd[1]);
-                case "hello" -> parsePlayerNew(cmd[1]);
-                case "goodbye" -> parsePlayerLeft(cmd[1]);
-                case "changename" -> parseChangeName(cmd[1], cmd[2]);
-                case "h" -> parseHit(cmd[1]);
-                case "d" -> parseDamage(cmd[1]);
-            }
-        }
+        if (cmd[0].equals("o")) parseObservations(cmd[1]);
+        else if (cmd[0].equals("s")) parseStatus(cmd);
+        else if (cmd[0].equals("player")) parsePlayer(cmd);
+        else if (cmd[0].equals("g")) parseGameStatus(cmd);
+        else if (cmd[0].equals("u")) parseScoreboard(cmd);
+        else if (cmd[0].equals("notification")) parseNotification(cmd[1]);
+        else if (cmd[0].equals("hello")) parsePlayerNew(cmd[1]);
+        else if (cmd[0].equals("goodbye")) parsePlayerLeft(cmd[1]);
+        else if (cmd[0].equals("changename")) parseChangeName(cmd[1], cmd[2]);
+        else if (cmd[0].equals("h")) parseHit(cmd[1]);
+        else if (cmd[0].equals("d")) parseDamage(cmd[1]);
+
 
 
     }

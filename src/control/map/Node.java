@@ -15,9 +15,12 @@ class Node {
     private static HashMap<String, Node> hashMap;
 
     public static Node getNode(int x, int y, PlayerInfo.Direction dir) {
-        String s = x + "/" + y + "/" + dir;
+        return getNode(x, y, dir, false);
+    }
+    public static Node getNode(int x, int y, PlayerInfo.Direction dir, boolean ehAtras) {
+        String s = x + "/" + y + "/" + dir + "/" + ehAtras;
         if (hashMap.containsKey(s)) { return hashMap.get(s); }
-        Node n = new Node(x, y, dir);
+        Node n = new Node(x, y, dir, ehAtras);
         hashMap.put(s, n);
         return n;
     }
@@ -30,9 +33,16 @@ class Node {
 
     public int x;
     public int y;
+    public boolean ehAtras;
+    public boolean ehSafe;
+
     public PlayerInfo.Direction dir;
     public Node(int x, int y, PlayerInfo.Direction dir) {
-        this.x = x; this.y = y; this.dir = dir;
+        this.x = x; this.y = y; this.dir = dir; ehAtras = false;
+        this.ehSafe = Field.get(x, y) == Position.SAFE;
+    }
+    public Node(int x, int y, PlayerInfo.Direction dir, boolean ehAtras) {
+        this.x = x; this.y = y; this.dir = dir; this.ehAtras = ehAtras;
     }
 
     /**
@@ -44,16 +54,27 @@ class Node {
     public Node[] gerarVizinhos(Node n) {
         Node[] ret;
         switch (n.dir) {
-            case north, south -> ret = new Node[]{
-                    Node.getNode(x, y + 1, dir), Node.getNode(x, y - 1, dir),
+            case north -> ret = new Node[] {
+                    Node.getNode(x, y - 1, dir), Node.getNode(x, y + 1, dir, true),
+                    Node.getNode(x, y, PlayerInfo.Direction.east),
+                    Node.getNode(x, y, PlayerInfo.Direction.west),
+            };
+            case south -> ret = new Node[] {
+                    Node.getNode(x, y + 1, dir), Node.getNode(x, y - 1, dir, true),
                     Node.getNode(x, y, PlayerInfo.Direction.east),
                     Node.getNode(x, y, PlayerInfo.Direction.west)
             };
-            default -> ret = new Node[]{
-                    Node.getNode(x + 1, y, dir), Node.getNode(x - 1, y, dir),
+            case east -> ret = new Node[] {
+                    Node.getNode(x + 1, y, dir), Node.getNode(x - 1, y, dir, true),
                     Node.getNode(x, y, PlayerInfo.Direction.north),
                     Node.getNode(x, y, PlayerInfo.Direction.south)
             };
+            case west -> ret = new Node[] {
+                    Node.getNode(x - 1, y, dir), Node.getNode(x + 1, y, dir, true),
+                    Node.getNode(x, y, PlayerInfo.Direction.north),
+                    Node.getNode(x, y, PlayerInfo.Direction.south)
+            };
+            default -> ret = null;
         }
         int x, y;
         for (int i = 0; i < 4; i ++) {
