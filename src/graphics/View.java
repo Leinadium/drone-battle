@@ -18,7 +18,7 @@ public class View extends JFrame {
         this.bot = bot;
 
         setBounds(0, 0, COMPRIMENTO, ALTURA);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
         setTitle(Config.nomeJogador);
         getContentPane().setLayout(null);
         this.gamePainel = new GamePanel(this.bot);

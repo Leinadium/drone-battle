@@ -17,7 +17,7 @@ public class AI {
     public State estadoAtual;
 
     public Action acaoAtual;
-    int tickFugir;                      // ticks que representam quanto tempo ele esta fugindo
+    int tickFugir = 0;
     int ticksAtacando = 0;
     Scanner scanner = new Scanner(System.in);
 
@@ -188,26 +188,27 @@ public class AI {
      * Caso tenha um inimigo a sua frente, fugir da linha de visão dele
      */
     private void doFugir() {
-        if (tickFugir < 0) { tickFugir = 5; }
         Path caminho = null, temp;
 
         Observation o = bot.getUltimaObservacao();
         PlayerInfo.Direction dir = bot.getDir();
         int [][] area;
 
-        // primeiro caso
-        if (o.isDano && !(o.isInimigo || o.isInimigoFrente)) {
-            area = Field.coords3x3Front(bot.getX(), bot.getY(), dir);
+        if (estadoAnterior == State.FUGIR && tickFugir > 0 && pathAtual.tamanho > 1) {
+            pathAtual.removerPrimeiraAcao();
+            acaoAtual = pathAtual.acoes[0];
+            return;
         }
+
         // segundo caso
-        else if (o.isInimigo) {
+        if (o.isInimigo) {
             // area = Field.coords5x5Around(bot.getX(), bot.getY());
             // simplesmente olha para o lado
             acaoAtual = Action.ESQUERDA;
             return;
 
         }
-        // terceiro caso
+        // primeiro e terceiro caso
         else {
             area = Field.coords5x2Sides(bot.getX(), bot.getY(), dir);
         }
@@ -227,9 +228,10 @@ public class AI {
 
         // passando a primeira acao
         if (caminho == null) {
-            doExplorar();
+            doAtacar();     // se defende se nao tem como fugir
         } else {
-            acaoAtual = caminho.acoes[0];
+            pathAtual = caminho;
+            acaoAtual = pathAtual.acoes[0];
         }
     }
 
