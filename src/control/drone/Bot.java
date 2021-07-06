@@ -100,17 +100,20 @@ public class Bot implements Runnable, IBot {
     }
 
     public void exibirScore() {
-        System.out.println("==== SCOREBOARD ====");
-        System.out.printf("Time: %d\n", time);
-        System.out.printf("Status: %s\n", state.toString());
-        for (ScoreBoard sb: this.listaScores) {
-            String s = String.format("%s (%s): score=%d, energy=%d",
-                    sb.name,
-                    sb.connected ? "connected" : "not connected",
-                    sb.score,
-                    sb.energy);
-            System.out.println(s);
+        try {
+            System.out.println("==== SCOREBOARD ====");
+            System.out.printf("Time: %d\n", time);
+            System.out.printf("Status: %s\n", state.toString());
+            for (ScoreBoard sb : this.listaScores) {
+                String s = String.format("%s (%s): score=%d, energy=%d",
+                        sb.name,
+                        sb.connected ? "connected" : "not connected",
+                        sb.score,
+                        sb.energy);
+                System.out.println(s);
+            }
         }
+        catch (Exception ignored) {}
     }
 
     /* IMPLEMENTACOES DE IBOT */

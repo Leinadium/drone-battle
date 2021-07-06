@@ -209,7 +209,7 @@ public class AI {
         PlayerInfo.Direction dir = bot.getDir();
         int [][] area;
 
-        if (estadoAnterior == State.FUGIR && tickFugir > 0 && pathAtual.tamanho > 1) {
+        if (this.pathAtual != null && estadoAnterior == State.FUGIR && tickFugir > 0 && pathAtual.tamanho > 1) {
             pathAtual.removerPrimeiraAcao();
             acaoAtual = pathAtual.acoes[0];
             return;
