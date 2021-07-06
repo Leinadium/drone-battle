@@ -77,6 +77,15 @@ public class AI {
             mapaMudou = true;
         }
 
+        // se o drone tomou tiro, coloca a posicao como insegura para ele fugir dali
+        if (o.isDano) {
+            Field.setPosicaoUnsafe(x, y);
+            Field.setPosicaoUnsafe(x - 1, y);
+            Field.setPosicaoUnsafe(x + 1, y);
+            Field.setPosicaoUnsafe(x, y - 1);
+            Field.setPosicaoUnsafe(x, y + 1);
+        }
+
         if (o.isFlash || o.isBuraco) {
             Field.setAround(x, y, Position.DANGER);
             ehPerigo = true;
@@ -141,14 +150,14 @@ public class AI {
         }
 
         // verificando atacar
-        if (o.isInimigoFrente && ticksAtacando < 10
+        if (o.isInimigoFrente && ticksAtacando < 10 && e > 30
                 && !Field.hasParedeInFront(bot.getX(), bot.getY(), bot.getDir(), o.distanciaInimigoFrente)) {
             return State.ATACAR;
         }
 
         // verificando fugir
         if ((o.isDano && !o.isInimigoFrente)
-                || ((o.isInimigoFrente || o.isInimigo) && e <= 30 && (estadoAnterior != State.ATACAR))) {
+                || ((o.isInimigoFrente || o.isInimigo) && e <= 30)) {
             tickFugir = 5;
             return State.FUGIR;
         }
@@ -297,6 +306,10 @@ public class AI {
                 dest = Field.melhorBlocoUsandoPontoFocal(bot.getX(), bot.getY(),bot.getDir(), xx, yy);
                 pathAtual = Field.aStar(bot.getX(), bot.getY(), bot.getDir(), dest[0], dest[1]);
                 if (pathAtual != null) acaoAtual = pathAtual.acoes[0];
+            } else {
+                // algo bugou?
+                System.out.println("RECARREGAR BUG!");
+                doExplorar();
             }
         }
         // caso tudo de errado, ou nao tenha powerups

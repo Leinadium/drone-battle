@@ -19,6 +19,7 @@ public class Field {
     private static HashMap<String, Integer> posicoesOuro;
     private static HashMap<String, Integer> posicoesPowerup;
     private static HashMap<String, Boolean> posicoesSafe;
+    private static HashMap<String, Integer> posicoesUnsafe;
 
     public static final int comprimento = 59;
     public static final int altura = 34;
@@ -30,17 +31,42 @@ public class Field {
     public static int ySpawn = -1;
 
     public static void init() {
-        mapa = new HashMap<>();
-        posicoesOuro = new HashMap<>();
-        posicoesPowerup = new HashMap<>();
-        posicoesSafe = new HashMap<>();
+        mapa = new HashMap<>();                 // mapa com todas as posicoes conhecidas
+        posicoesOuro = new HashMap<>();         // mapa contendo os ouros e quantos ticks desde a ultima visita
+        posicoesPowerup = new HashMap<>();      // mapa contendo os powerups e quantos ticks desde a ultima visita
+        posicoesSafe = new HashMap<>();         // mapa contendo todas as posicoes seguras conhecidas
+        posicoesUnsafe = new HashMap<>();       // mapa contendo todas as posicoes nao seguras e quantos ticks
     }
 
+    /**
+     * Atualiza todos os ouros, powerups, e posicoes nao seguras
+     * com o tempo em milissegundos fornecido
+     * @param ms milisegundos para atualizar as posicoes
+     */
     public static void doTick(int ms) {
         posicoesOuro.replaceAll((s, v) -> v + ms);
         posicoesPowerup.replaceAll((s, v) -> v + ms);
+
+        // atualizando as posicoes nao seguras
+        ArrayList<String> toRemove = new ArrayList<>();
+        for (String s: posicoesUnsafe.keySet()) {
+            int tick = posicoesUnsafe.get(s);
+            if (tick > 5) { toRemove.add(s); }
+            else posicoesUnsafe.put(s, tick + 1);
+        }
+        // removendo as posicoes nao seguras velhas
+        for (String s: toRemove) {
+            posicoesUnsafe.remove(s);
+        }
     }
 
+    /**
+     * Atualiza a casa sem verificação de segurança do set.
+     * Ou seja, o que foi passado será atualizado (ao contrario do set)
+     * @param x posicao x da casa
+     * @param y posicao y da casa
+     * @param tipoCasa tipo da casa
+     */
     public static void setForce(int x, int y, Position tipoCasa) {
         String s = x + "-" + y;
         mapa.put(s, tipoCasa);
@@ -51,6 +77,15 @@ public class Field {
         }
     }
 
+    /**
+     * Atualiza a casa com a posicao fornecida
+     * Se o tipo for SAFE ou DANGER, mas ja se sabe o que tem na casa, não é atualizado
+     * Se o tipo for EMPTY mas souber que ali tem um ouro ou powerup, nao é atualizado
+     * É atualizado o spawn na primeira vez que esse método é chamado
+     * @param x posicao x da casa
+     * @param y posicao y da casa
+     * @param tipoCasa tipo da casa
+     */
     public static void set(int x, int y, Position tipoCasa) {
 
         Position get = get(x, y);
@@ -91,6 +126,12 @@ public class Field {
         removeSafe(x, y);
     }
 
+    /**
+     * Retorna o valor da casa
+     * @param x posicao x da casa
+     * @param y posicao y da casa
+     * @return tipo da casa
+     */
     public static Position get(int x, int y) {
         if (x < 0 || y < 0 || x >= Field.comprimento || y >= Field.altura) {
             return Position.PAREDE;
@@ -101,6 +142,23 @@ public class Field {
         // retorna a resposta, ou UNKNOWN se for nulo
         return Objects.requireNonNullElse(ret, Position.UNKNOWN);
     }
+
+    /**
+     * Coloca a posicao nao segura por 5 ticks
+     * @param x posicao x da casa
+     * @param y posicao y da casa
+     */
+    public static void setPosicaoUnsafe(int x, int y) {
+        posicoesUnsafe.put(x + "-" + y, 1);
+    }
+
+    /**
+     * Retorna se a posicao é atualmente insegura
+     */
+    private static boolean isUnsafe(int x, int y) {
+        return posicoesUnsafe.containsKey(x + "-" + y);
+    }
+
 
     public static void setOuro(int x, int y) {
         String s = x + "-" + y;
@@ -135,16 +193,31 @@ public class Field {
         }
     }
 
+    /**
+     * Salva o powerup na lista interna
+     * @param x posicao x da casa
+     * @param y posicao y da casa
+     */
     public static void setPowerup(int x, int y) {
         String s = x + "-" + y;
         posicoesPowerup.put(s, 0);
     }
 
+    /**
+     * Salva a posicao segura na lista interna
+     * @param x posicao x da casa
+     * @param y posicao y da casa
+     */
     private static void setSafe(int x, int y) {
         String s = x + "-" + y;
         posicoesSafe.put(s, true);
     }
 
+    /**
+     * Remove a casa como uma casa segura
+     * @param x posicao x da casa
+     * @param y posicao y da casa
+     */
     public static void removeSafe(int x, int y) {
         String s = x + "-" + y;
         posicoesSafe.remove(s);
@@ -179,6 +252,9 @@ public class Field {
         }
     }
 
+    /**
+     * Atualiza o bloco atrás do drone com aquela informacao
+     */
     public static void setBack(int x, int y, PlayerInfo.Direction dir, Position tipo) {
         switch (dir) {
             case north -> set(x, y + 1, tipo);
@@ -248,6 +324,10 @@ public class Field {
 
     }
 
+    /**
+     * Verifica se tem algum powerup ou ouro para coletar.
+     * Usado pelos metodos hasOuroParaColetar e hasPowerupParaColetar
+     */
     private static boolean hasAlgoParaColetar(int x, int y, PlayerInfo.Direction dir, int tick, HashMap<String, Integer> posicoes) {
         int xDest, yDest, tickDest, distanciaDest, ticksParaNascer;
         String[] temp;
@@ -466,13 +546,19 @@ public class Field {
         return false;
     }
 
+    /**
+     * Calcula a distancia manhattan entre dois pontos
+     */
     public static int manhattan(int x, int y, int x1, int y1) {
         return (Math.abs(x - x1) + Math.abs(y - y1));
     }
 
     /**
      * Algoritmo A* para encontrar o melhor caminho entre os dois pontos.
-     * Evita caminhos perigosos (com possível burado ou flash)
+     * Evita caminhos perigosos (com possível burado ou flash) e paredes
+     * Penaliza caminhos em que o drone anda de ré
+     * Recompensa caminhos que passam por lugares seguros nao explorados
+     * Penaliza caminhos que passam por posicoes nao seguras
      * @param xDrone posicao x do drone
      * @param yDrone posicao y do drone
      * @param dirDrone direcao do drone
@@ -507,6 +593,7 @@ public class Field {
                 custo = 1;
                 if (viz.ehAtras) custo += 1.5;
                 if (viz.ehSafe) custo *= 0.8;
+                if (isUnsafe(viz.x, viz.y)) custo += 10;
 
 
                 novoTick = node.ticksPercorridos + custo;

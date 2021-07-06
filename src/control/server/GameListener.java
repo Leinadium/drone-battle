@@ -5,7 +5,6 @@ import INF1771_GameClient.Dto.ScoreBoard;
 import INF1771_GameClient.Socket.*;
 import control.drone.Bot;
 import control.Config;
-import control.drone.Observation;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -193,7 +192,7 @@ public class GameListener implements CommandListener {
     private void parseDamage(String shooter) {
         String s = String.format("Fui atingido por [%s]", shooter);
 
-        this.bot.verificarHack(shooter);
+        this.bot.verificarCheat(shooter);
         this.bot.ultimoAcerto = s;
         this.bot.ultimoTickAcerto = (int) System.currentTimeMillis();
 

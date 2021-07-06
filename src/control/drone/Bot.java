@@ -123,10 +123,12 @@ public class Bot implements Runnable, IBot {
     public Observation getUltimaObservacao() { return this.ultimaObservacao; }
     /* FIM DAS IMPLEMENTACOES DO IBOT */
 
-    public void verificarHack(String acertoAtual) {
+    public void verificarCheat(String acertoAtual) {
         int tempo = (int) System.currentTimeMillis() - ultimoTickAcerto;
         if (acertoAtual.equals(this.ultimoAcerto) && tempo < Config.timerMinimo ) {
-            this.sender.enviarMensagem(String.format("Hack? %s me acertou em %d ms de diferenca", ultimoAcerto, tempo));
+            this.sender.enviarMensagem(String.format(
+                    "Cheating? %s me acertou em %d ms de diferenca (permitido: %d ms)",
+                    ultimoAcerto, tempo, Config.timerMinimo));
         }
     }
 
