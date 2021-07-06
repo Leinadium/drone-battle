@@ -50,7 +50,7 @@ public class Bot implements Runnable, IBot {
 
     private void config() {
         this.client = new HandleClient();
-        Field.init();
+        Field.iniciar();
         this.log = new Log();
         this.sender = new Sender(this.client);
 
@@ -85,8 +85,8 @@ public class Bot implements Runnable, IBot {
         config();
     }
 
-    public void sleep(int ms) {
-        Field.doTick(ms);
+    public void dormir(int ms) {
+        Field.fazerTick(ms);
         if (ms < 0) { return; }
         try {
             Thread.sleep(ms);
@@ -95,7 +95,7 @@ public class Bot implements Runnable, IBot {
         }
     }
 
-    public void limparObservacaoes() {
+    public void limparObservacoes() {
         this.ultimaObservacao.reset();
     }
 
@@ -123,7 +123,7 @@ public class Bot implements Runnable, IBot {
     public Observation getUltimaObservacao() { return this.ultimaObservacao; }
     /* FIM DAS IMPLEMENTACOES DO IBOT */
 
-    public void verificarCheat(String acertoAtual) {
+    public void antiCheat(String acertoAtual) {
         int tempo = (int) System.currentTimeMillis() - ultimoTickAcerto;
         if (acertoAtual.equals(this.ultimoAcerto) && tempo < Config.timerMinimo ) {
             this.sender.enviarMensagem(String.format(
@@ -131,7 +131,6 @@ public class Bot implements Runnable, IBot {
                     ultimoAcerto, tempo, Config.timerMinimo));
         }
     }
-
 
     /**
      * Roda o bot
@@ -141,7 +140,7 @@ public class Bot implements Runnable, IBot {
         int timer = 0;
         long tempoExec;
         boolean emPartida = false;
-        Action acao = Action.NONE;
+        Action acao = Action.NADA;
 
         // sleep(Config.timerLento);
 
@@ -149,8 +148,8 @@ public class Bot implements Runnable, IBot {
             if (state == PlayerInfo.State.game) {
 
                 // dorme
-                if (acao == Action.SHOOT) sleep(Config.timerMinimo - this.thinkingTime);
-                else sleep(Config.timerNormal - this.thinkingTime);
+                if (acao == Action.ATIRAR) dormir(Config.timerMinimo - this.thinkingTime);
+                else dormir(Config.timerNormal - this.thinkingTime);
 
                 // caso seja o inicio da partida
                 if (!emPartida) {
@@ -158,7 +157,7 @@ public class Bot implements Runnable, IBot {
                     emPartida = true;
                     this.sender.pedirStatus();
                     this.sender.pedirObservacao();
-                    sleep(Config.timerNormal);
+                    dormir(Config.timerNormal);
                 }
 
                 // atualiza as variaveis de contagem
@@ -170,7 +169,7 @@ public class Bot implements Runnable, IBot {
                 this.sender.enviarAction(acao);
 
                 // pede as proximas coisas
-                limparObservacaoes();
+                limparObservacoes();
                 this.sender.pedirObservacao();
                 this.sender.pedirStatus();
                 this.sender.pedirStatusGame();
@@ -180,13 +179,13 @@ public class Bot implements Runnable, IBot {
                 this.tela.repaint();
                 this.thinkingTime = (int) (System.currentTimeMillis() - tempoExec);
             } else {
-                sleep(Config.timerLento);
+                dormir(Config.timerLento);
                 if (emPartida) {
                     this.sender.enviarMensagem("gg");
                 }
 
                 emPartida = false;
-                Field.init();
+                Field.iniciar();
                 if (timer == 5) {
                     this.sender.pedirScoreboard();
                     exibirScore();

@@ -26,10 +26,4 @@ public class Log {
         }
         indiceAtual = lista.size();
     }
-
-    public void dump() {
-        for (String s: lista) {
-            System.out.println(s);
-        }
-    }
 }

@@ -12,7 +12,7 @@ public class Sender {
 
     /**
      * Classe para enviar os comandos
-     * @param client
+     * @param client client da conexao
      */
     public Sender(HandleClient client) {
         this.client = client;
@@ -34,12 +34,12 @@ public class Sender {
      */
     public void enviarAction(Action action) {
         switch (action) {
-            case RIGHT -> client.sendTurnRight();
-            case LEFT -> client.sendTurnLeft();
-            case FRONT -> client.sendForward();
-            case BACK -> client.sendBackward();
-            case TAKE -> client.sendGetItem();
-            case SHOOT -> client.sendShoot();
+            case DIREITA -> client.sendTurnRight();
+            case ESQUERDA -> client.sendTurnLeft();
+            case FRENTE -> client.sendForward();
+            case TRAS -> client.sendBackward();
+            case PEGAR -> client.sendGetItem();
+            case ATIRAR -> client.sendShoot();
         }
     }
 

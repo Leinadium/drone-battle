@@ -37,13 +37,13 @@ class GamePanel extends JPanel {
                 y = yDrone + (i / 9) - 4;
                 pos = Field.get(x, y);
                 switch (pos) {
-                    case DANGER -> g.setColor(Color.RED);
+                    case PERIGO -> g.setColor(Color.RED);
                     case PAREDE -> g.setColor(Color.BLACK);
-                    case UNKNOWN -> g.setColor(Color.GRAY);
-                    case SAFE -> g.setColor(Color.GREEN);
+                    case DESCONHECIDO -> g.setColor(Color.GRAY);
+                    case SEGURO -> g.setColor(Color.GREEN);
                     case OURO -> g.setColor(Color.YELLOW);
                     case POWERUP -> g.setColor(Color.CYAN);
-                    case EMPTY -> g.setColor(Color.WHITE);
+                    case VAZIO -> g.setColor(Color.WHITE);
                 }
                 g.fillRect((i % 9) * TAM, (i / 9) * TAM, TAM, TAM);
                 g.setColor(Color.BLACK);
@@ -68,7 +68,7 @@ class GamePanel extends JPanel {
             g2d.drawRect(x * TAM, y * TAM, TAM, TAM);
 
             if (this.bot.ai.pathAtual != null) {
-                // pintando o bufferpath
+                // pintando path
                 int bx = xDrone;
                 int by = yDrone;
                 PlayerInfo.Direction bdir = this.bot.dir;
@@ -76,7 +76,7 @@ class GamePanel extends JPanel {
                 g2d.setStroke(new BasicStroke(4));
                 for (Action a: this.bot.ai.pathAtual.acoes) {
                     switch (a) {
-                        case LEFT -> {
+                        case ESQUERDA -> {
                             switch (bdir) {
                                 case north -> bdir = PlayerInfo.Direction.west;
                                 case south -> bdir = PlayerInfo.Direction.east;
@@ -84,7 +84,7 @@ class GamePanel extends JPanel {
                                 case west -> bdir = PlayerInfo.Direction.south;
                             }
                         }
-                        case RIGHT -> {
+                        case DIREITA -> {
                             switch (bdir) {
                                 case north -> bdir = PlayerInfo.Direction.east;
                                 case south -> bdir = PlayerInfo.Direction.west;
@@ -92,7 +92,7 @@ class GamePanel extends JPanel {
                                 case west -> bdir = PlayerInfo.Direction.north;
                             }
                         }
-                        case FRONT -> {
+                        case FRENTE -> {
                             switch (bdir) {
                                 case north -> {
                                     g2d.drawLine((bx - xDrone + 4)*TAM + TAM / 2, (by - yDrone + 4)*TAM + TAM/2,
@@ -116,7 +116,7 @@ class GamePanel extends JPanel {
                                 }
                             }
                         }
-                        case BACK -> {
+                        case TRAS -> {
                             switch (bdir) {
                                 case south -> {
                                     g2d.drawLine((bx - xDrone + 4)*TAM + TAM / 2, (by - yDrone + 4)*TAM + TAM/2,
@@ -142,13 +142,10 @@ class GamePanel extends JPanel {
                         }
                     }
                 }
-
                 // pintando o ultimo quadrado
                 g2d.setColor(Color.MAGENTA);
-                g2d.fillRect((bx - xDrone + 4)*TAM, (by - yDrone + 4)*TAM,TAM,TAM);
+                g2d.fillRect((bx - xDrone + 4)*TAM + 5, (by - yDrone + 4)*TAM + 5,TAM - 10,TAM - 10);
             }
-
-
         }
         catch (NullPointerException ignored) {}
     }

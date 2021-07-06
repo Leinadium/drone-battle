@@ -192,7 +192,7 @@ public class GameListener implements CommandListener {
     private void parseDamage(String shooter) {
         String s = String.format("Fui atingido por [%s]", shooter);
 
-        this.bot.verificarCheat(shooter);
+        this.bot.antiCheat(shooter);
         this.bot.ultimoAcerto = s;
         this.bot.ultimoTickAcerto = (int) System.currentTimeMillis();
 

@@ -25,12 +25,14 @@ public class Field {
     public static final int altura = 34;
 
     private static Path bufferPath;
-    public static boolean mapaMudou;
 
     public static int xSpawn = -1;
     public static int ySpawn = -1;
 
-    public static void init() {
+    /**
+     * Inicializa as variaveis e listas internas do mapa
+     */
+    public static void iniciar() {
         mapa = new HashMap<>();                 // mapa com todas as posicoes conhecidas
         posicoesOuro = new HashMap<>();         // mapa contendo os ouros e quantos ticks desde a ultima visita
         posicoesPowerup = new HashMap<>();      // mapa contendo os powerups e quantos ticks desde a ultima visita
@@ -43,7 +45,7 @@ public class Field {
      * com o tempo em milissegundos fornecido
      * @param ms milisegundos para atualizar as posicoes
      */
-    public static void doTick(int ms) {
+    public static void fazerTick(int ms) {
         posicoesOuro.replaceAll((s, v) -> v + ms);
         posicoesPowerup.replaceAll((s, v) -> v + ms);
 
@@ -90,40 +92,38 @@ public class Field {
 
         Position get = get(x, y);
         if (get == tipoCasa) {
-            mapaMudou = false;
             return;
         }
-        mapaMudou = true;
 
         // primeiro set de uma casa vazia, logo eh o spawn do jogador
-        if (tipoCasa == Position.EMPTY && xSpawn == -1) {
+        if (tipoCasa == Position.VAZIO && xSpawn == -1) {
             xSpawn = x;
             ySpawn = y;
         }
 
         String s = x + "-" + y;
 
-        if (tipoCasa == Position.DANGER) {
-            if (get(x, y) == Position.UNKNOWN) {
+        if (tipoCasa == Position.PERIGO) {
+            if (get(x, y) == Position.DESCONHECIDO) {
                 mapa.put(s, tipoCasa);
             }
             return;
         }
-        if (tipoCasa == Position.SAFE) {
-            if (get(x, y) == Position.UNKNOWN || get(x, y) == Position.DANGER) {
+        if (tipoCasa == Position.SEGURO) {
+            if (get(x, y) == Position.DESCONHECIDO || get(x, y) == Position.PERIGO) {
                 mapa.put(s, tipoCasa);
-                setSafe(x, y);
+                setSeguro(x, y);
             }
             return;
         }
-        if (tipoCasa == Position.EMPTY) {
+        if (tipoCasa == Position.VAZIO) {
             if (!(get(x, y) == Position.OURO || get(x, y) == Position.POWERUP)) {
                 mapa.put(s, tipoCasa);
             }
             return;
         }
         mapa.put(s, tipoCasa);
-        removeSafe(x, y);
+        removerSeguro(x, y);
     }
 
     /**
@@ -140,7 +140,7 @@ public class Field {
         String s = x + "-" + y;
         Position ret = mapa.get(s);
         // retorna a resposta, ou UNKNOWN se for nulo
-        return Objects.requireNonNullElse(ret, Position.UNKNOWN);
+        return Objects.requireNonNullElse(ret, Position.DESCONHECIDO);
     }
 
     /**
@@ -148,17 +148,16 @@ public class Field {
      * @param x posicao x da casa
      * @param y posicao y da casa
      */
-    public static void setPosicaoUnsafe(int x, int y) {
+    public static void setPosicaoInsegura(int x, int y) {
         posicoesUnsafe.put(x + "-" + y, 1);
     }
 
     /**
      * Retorna se a posicao é atualmente insegura
      */
-    private static boolean isUnsafe(int x, int y) {
+    private static boolean isInsegura(int x, int y) {
         return posicoesUnsafe.containsKey(x + "-" + y);
     }
-
 
     public static void setOuro(int x, int y) {
         String s = x + "-" + y;
@@ -172,7 +171,7 @@ public class Field {
      * @param x posicao x do ouro/powerup
      * @param y posicao y do ouro/powerup
      */
-    public static void shouldThereBeGoldOrPowerupHere(int x, int y) {
+    public static void deveriaTerOuroOuPowerupAqui(int x, int y) {
         String s = x + "-" + y;
         boolean hasGold = posicoesOuro.containsKey(s);
         boolean hasPowerup = posicoesPowerup.containsKey(s);
@@ -208,7 +207,7 @@ public class Field {
      * @param x posicao x da casa
      * @param y posicao y da casa
      */
-    private static void setSafe(int x, int y) {
+    private static void setSeguro(int x, int y) {
         String s = x + "-" + y;
         posicoesSafe.put(s, true);
     }
@@ -218,7 +217,7 @@ public class Field {
      * @param x posicao x da casa
      * @param y posicao y da casa
      */
-    public static void removeSafe(int x, int y) {
+    public static void removerSeguro(int x, int y) {
         String s = x + "-" + y;
         posicoesSafe.remove(s);
     }
@@ -229,7 +228,7 @@ public class Field {
      * @param y Posicao y
      * @param tipo Informacao do bloco
      */
-    public static void setAround(int x, int y, Position tipo) {
+    public static void setAoRedor(int x, int y, Position tipo) {
         set(x + 1, y, tipo);
         set(x - 1, y, tipo);
         set(x , y + 1, tipo);
@@ -243,7 +242,7 @@ public class Field {
      * @param dir Direcao do drone
      * @param tipo Informacao do bloco
      */
-    public static void setFront(int x, int y, PlayerInfo.Direction dir, Position tipo) {
+    public static void setFrente(int x, int y, PlayerInfo.Direction dir, Position tipo) {
         switch (dir) {
             case north -> set(x, y - 1, tipo);
             case east -> set(x + 1, y, tipo);
@@ -255,7 +254,7 @@ public class Field {
     /**
      * Atualiza o bloco atrás do drone com aquela informacao
      */
-    public static void setBack(int x, int y, PlayerInfo.Direction dir, Position tipo) {
+    public static void setAtras(int x, int y, PlayerInfo.Direction dir, Position tipo) {
         switch (dir) {
             case north -> set(x, y + 1, tipo);
             case east -> set(x - 1, y, tipo);
@@ -271,11 +270,10 @@ public class Field {
      * @param x posicao x do drone
      * @param y posicao y do drone
      * @param dir direcao do drone
-     * @param tick tick atual do jogo
      * @return true se houver algum ouro para coletar
      */
-    public static boolean hasOuroParaColetar(int x, int y, PlayerInfo.Direction dir, int tick) {
-        return hasAlgoParaColetar(x, y, dir, tick, posicoesOuro);
+    public static boolean temOuroParaColetar(int x, int y, PlayerInfo.Direction dir) {
+        return temAlgoParaColetar(x, y, dir, posicoesOuro);
     }
 
     /**
@@ -285,18 +283,17 @@ public class Field {
      * @param x posicao x do drone
      * @param y posicao y do drone
      * @param dir direcao do drone
-     * @param tick tick atual do jogo
      * @return true se houver algum powerup para coletar
      */
-    public static boolean hasPowerupParaColetar(int x, int y, PlayerInfo.Direction dir, int tick) {
-        return hasAlgoParaColetar(x, y, dir, tick, posicoesPowerup);
+    public static boolean temPowerupParaColetar(int x, int y, PlayerInfo.Direction dir) {
+        return temAlgoParaColetar(x, y, dir, posicoesPowerup);
     }
 
     /**
      * Coloca o path para o powerup mais proximo no bufferPath, se houver
      * Se nao, bufferpath sera nulo
      */
-    public static int[] powerupMaisProximo(int x, int y, PlayerInfo.Direction dir) {
+    public static int[] powerupMaisPerto(int x, int y, PlayerInfo.Direction dir) {
         Path pathTemp;
         int xTemp, yTemp;
         String[] sTemp;
@@ -307,7 +304,7 @@ public class Field {
             xTemp = Integer.parseInt(sTemp[0]);
             yTemp = Integer.parseInt(sTemp[1]);
 
-            pathTemp = aStar(x, y, dir, xTemp, yTemp);
+            pathTemp = aEstrela(x, y, dir, xTemp, yTemp);
             if (pathTemp == null) {continue;}
 
             if (bufferPath == null || pathTemp.tamanho < bufferPath.tamanho) {
@@ -327,8 +324,9 @@ public class Field {
     /**
      * Verifica se tem algum powerup ou ouro para coletar.
      * Usado pelos metodos hasOuroParaColetar e hasPowerupParaColetar
+     * Se tiver, retorna True e coloca o path no buffer
      */
-    private static boolean hasAlgoParaColetar(int x, int y, PlayerInfo.Direction dir, int tick, HashMap<String, Integer> posicoes) {
+    private static boolean temAlgoParaColetar(int x, int y, PlayerInfo.Direction dir, HashMap<String, Integer> positions) {
         int xDest, yDest, tickDest, distanciaDest, ticksParaNascer;
         String[] temp;
 
@@ -336,7 +334,7 @@ public class Field {
         boolean ret = false;
         Path pathMaisProximo = null;
 
-        for (Map.Entry<String, Integer> entry: posicoes.entrySet()) {
+        for (Map.Entry<String, Integer> entry: positions.entrySet()) {
             temp = entry.getKey().split("-");
             xDest = Integer.parseInt(temp[0]);
             yDest = Integer.parseInt(temp[1]);
@@ -344,7 +342,7 @@ public class Field {
             ticksParaNascer = (Config.tempoSpawn - tickDest) / Config.timerNormal;
             // System.out.println(entry.getKey() + '/' + ticksParaNascer);
 
-            bufferPath = aStar(x, y, dir, xDest, yDest);
+            bufferPath = aEstrela(x, y, dir, xDest, yDest);
             if (bufferPath == null) { continue; }
             distanciaDest = bufferPath.tamanho;
             if (ticksParaNascer - distanciaDest < 0) {
@@ -372,13 +370,13 @@ public class Field {
      * Verifica se tem algum ouro ja descoberto
      * @return true se houver algum ouro
      */
-    public static boolean hasOuro() { return posicoesOuro.size() > 0; }
+    public static boolean temOuro() { return posicoesOuro.size() > 0; }
 
     /**
      * Retorna o ponto medio dos ouros, ou o spawn se nao tiver nenhum ouro
      */
     public static int[] pontoMedioOuro() {
-        if (!hasOuro()) {
+        if (!temOuro()) {
             return new int[] {xSpawn, ySpawn};
         }
         int somax = 0;
@@ -409,7 +407,7 @@ public class Field {
             // distanciaBlocoPonto = (int) Math.pow(manhattan(x, y, xPonto, yPonto), 2);
             distanciaBlocoPonto = 2 * (int) Math.sqrt((Math.pow(x - xPonto, 2) + Math.pow(y - yPonto, 2)));
 
-            path = aStar(xDrone, yDrone, dirDrone, x, y);
+            path = aEstrela(xDrone, yDrone, dirDrone, x, y);
             if (path == null) {continue;}
             distanciaBlocoDrone = path.tamanho;
 
@@ -427,54 +425,7 @@ public class Field {
      * Verifica se tem algum powerup ja descoberto
      * @return true se houver algum power
      */
-    public static boolean hasPowerup() { return posicoesPowerup.size() > 0; }
-
-    /**
-     * Retorna uma lista com as posicoes x,y da area 3x3 na frente do drone.
-     * Utilizado no calculo da fuga do drone
-     */
-    public static int[][] coords3x3Front(int x, int y, PlayerInfo.Direction dir) {
-        int [][] ret;
-
-        switch (dir) {
-            case north -> ret = new int[][] {
-                    {x, y - 1},{x, y - 2},{x, y - 3},
-                    {x - 1, y - 1},{x - 1, y - 2},{x - 1, y - 3},
-                    {x + 1,  y - 1},{x + 1, y - 2},{x + 1, y - 3},
-            };
-            case east -> ret = new int[][] {
-                    {x + 1, y},{x + 2, y},{x + 3, y},
-                    {x + 1, y - 1},{x + 2, y - 1},{x + 3, y - 1},
-                    {x + 1,  y - 1},{x + 2, y - 1},{x + 3, y - 1},
-            };
-            case south -> ret = new int[][] {
-                    {x, y + 1},{x, y + 2},{x, y + 3},
-                    {x - 1, y + 1},{x - 1, y + 2},{x - 1, y + 3},
-                    {x + 1,  y + 1},{x + 1, y + 2},{x + 1, y + 3},
-            };
-            case west -> ret = new int[][] {
-                    {x - 1, y},{x - 2, y},{x - 3, y},
-                    {x - 1, y - 1},{x - 2, y - 1},{x - 3, y - 1},
-                    {x - 1,  y - 1},{x - 2, y - 1},{x - 3, y - 1},
-            };
-            default -> ret = null;
-        }
-        return ret;
-    }
-
-    /**
-     * Retorna uma lista contendo as posicões dos quadrados das arestas
-     * de um quadrado 5x5
-     * Utilizado no calculo da fuga de um drone
-     */
-    public static int[][] coords5x5Around(int x, int y) {
-        return new int[][] {
-                {x-2, y-2},{x-1, y-2},{x, y-2},{x+1, y-2},
-                {x+2, y-2},{x+2, y-1},{x+2, y},{x+2, y+1},
-                {x+2, y+2},{x+1, y+2},{x, y+2},{x-1, y+2},
-                {x-2, y+2},{x-2, y+1},{x-2, y},{x-2, y-1},
-        };
-    }
+    public static boolean temPowerup() { return posicoesPowerup.size() > 0; }
 
     /**
      * Retorna uma lista contendo as posições dos quadrados nas areas 5x2 nos lados
@@ -509,7 +460,7 @@ public class Field {
      * @param q Quantidade de blocos para serem verificados
      * @return true se tiver alguma parede, false se não tiver ou não for conhecido
      */
-    public static boolean hasParedeInFront(int x, int y, PlayerInfo.Direction dir, int q) {
+    public static boolean temParedeNaFrente(int x, int y, PlayerInfo.Direction dir, int q) {
         int[][] coordsParaVerificar = new int[q][2];
         switch (dir) {
             case north -> {
@@ -566,7 +517,7 @@ public class Field {
      * @param yDest posicao y do destino
      * @return Um objeto Path contendo o caminho até o ponto, ou null caso não haja nenhum caminho até lá
      */
-    public static Path aStar(int xDrone, int yDrone, PlayerInfo.Direction dirDrone,  int xDest, int yDest) {
+    public static Path aEstrela(int xDrone, int yDrone, PlayerInfo.Direction dirDrone, int xDest, int yDest) {
 
         Node.init();
         Node nodeInicial = Node.getNode(xDrone, yDrone, dirDrone);
@@ -593,7 +544,7 @@ public class Field {
                 custo = 1;
                 if (viz.ehAtras) custo += 1.5;
                 if (viz.ehSafe) custo *= 0.8;
-                if (isUnsafe(viz.x, viz.y)) custo += 10;
+                if (isInsegura(viz.x, viz.y)) custo += 10;
 
 
                 novoTick = node.ticksPercorridos + custo;

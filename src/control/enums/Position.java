@@ -1,10 +1,10 @@
 package control.enums;
 
 public enum Position {
-    SAFE,
-    EMPTY,
-    DANGER,
-    UNKNOWN,
+    SEGURO,
+    VAZIO,
+    PERIGO,
+    DESCONHECIDO,
     PAREDE,
     OURO,
     POWERUP,

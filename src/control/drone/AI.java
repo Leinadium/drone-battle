@@ -19,6 +19,7 @@ public class AI {
     boolean mapaMudou;
     int xBuffer;
     int yBuffer;
+    boolean indoParaPowerup;
 
     // para exploracao
     private State estadoAnterior;
@@ -41,11 +42,11 @@ public class AI {
         estadoAtual = calcularEstado();
 
         switch (estadoAtual) {
-            case FUGIR -> doFugir();
-            case ATACAR -> doAtacar();
-            case COLETAR -> doColetar();
-            case EXPLORAR -> doExplorar();
-            case RECARREGAR -> doRecarregar();
+            case FUGIR -> fazerFugir();
+            case ATACAR -> fazerAtaque();
+            case COLETAR -> fazerColetar();
+            case EXPLORAR -> fazerExplorar();
+            case RECARREGAR -> fazerRecarregar();
         }
 
         if (estadoAtual != State.ATACAR) {ticksAtacando = 0;}
@@ -68,59 +69,60 @@ public class AI {
         Observation o = this.bot.getUltimaObservacao();
 
         mapaMudou = false;
+        indoParaPowerup = false;
 
         // quando uma observacao de flash eh perdida, pode ocorrer de andar em um deles
         // logo, isso garante que o flash seja atualizado mesmo se eu andar nele
         // como o servidor de vez em qdo trava, > 1 pode ter uns falsos positivos
         if (Math.abs(x - xBuffer) + Math.abs(y - yBuffer) > 3) {
-            Field.setForce(xBuffer, yBuffer, Position.DANGER);
+            Field.setForce(xBuffer, yBuffer, Position.PERIGO);
             mapaMudou = true;
         }
 
         // se o drone tomou tiro, coloca a posicao como insegura para ele fugir dali
         if (o.isDano) {
-            Field.setPosicaoUnsafe(x, y);
-            Field.setPosicaoUnsafe(x - 1, y);
-            Field.setPosicaoUnsafe(x + 1, y);
-            Field.setPosicaoUnsafe(x, y - 1);
-            Field.setPosicaoUnsafe(x, y + 1);
+            Field.setPosicaoInsegura(x, y);
+            Field.setPosicaoInsegura(x - 1, y);
+            Field.setPosicaoInsegura(x + 1, y);
+            Field.setPosicaoInsegura(x, y - 1);
+            Field.setPosicaoInsegura(x, y + 1);
         }
 
         if (o.isFlash || o.isBuraco) {
-            Field.setAround(x, y, Position.DANGER);
+            Field.setAoRedor(x, y, Position.PERIGO);
             ehPerigo = true;
             mapaMudou = true;
         }
         if (o.isParede) {
-            if (acaoAtual == Action.FRONT) Field.setFront(x, y, dir, Position.PAREDE);
-            else Field.setBack(x, y, dir, Position.PAREDE);
+            if (acaoAtual == Action.FRENTE) Field.setFrente(x, y, dir, Position.PAREDE);
+            else Field.setAtras(x, y, dir, Position.PAREDE);
             ehParede = true;
             mapaMudou = true;
         }
         if (o.isPowerup) {
-            Field.removeSafe(x, y);
+            Field.removerSeguro(x, y);
             Field.set(x, y, Position.POWERUP);
             Field.setPowerup(x, y);
             ehVazio = false;
         }
         if (o.isTesouro) {
-            Field.removeSafe(x, y);
+            Field.removerSeguro(x, y);
             Field.set(x, y, Position.OURO);
             Field.setOuro(x, y);
             ehVazio = false;
         }
 
         if (!ehPerigo) {
-            Field.setAround(x, y, Position.SAFE);
+            Field.setAoRedor(x, y, Position.SEGURO);
             if (!ehParede) {
-                if (acaoAtual == Action.FRONT) Field.setFront(x, y, dir, Position.SAFE);
-                else Field.setBack(x, y, dir, Position.SAFE);
+                if (acaoAtual == Action.FRENTE) Field.setFrente(x, y, dir, Position.SEGURO);
+                else Field.setAtras(x, y, dir, Position.SEGURO);
             }
         }
         if (ehVazio) {
-            Field.removeSafe(x, y);
-            Field.set(x, y, Position.EMPTY);
-            Field.shouldThereBeGoldOrPowerupHere(x, y);
+            Field.removerSeguro(x, y);
+            Field.set(x, y, Position.VAZIO);
+            Field.deveriaTerOuroOuPowerupAqui(x, y);
         }
     }
 
@@ -133,17 +135,17 @@ public class AI {
         Observation o = bot.getUltimaObservacao();
         int e = bot.getEnergy();
 
-        // excecao a regra, se tiver um ouro coleta imediatamente. Sempre vale a pena
+        // se tiver um ouro coleta imediatamente. Sempre vale a pena
         if (o.isTesouro) {
             return State.COLETAR;
         }
 
-        // outra excecao, se tiver um powerup, pega
-        if (o.isPowerup) {
+        // se tiver um powerup, pega
+        if (o.isPowerup && e <= 70) {
             return State.RECARREGAR;
         }
 
-        // outra excecao, ele tem que fugir 5 vezes
+        // ele tem que fugir 5 vezes
         if (tickFugir > 0) {
             tickFugir -= 1;
            return State.FUGIR;
@@ -151,7 +153,7 @@ public class AI {
 
         // verificando atacar
         if (o.isInimigoFrente && ticksAtacando < 10 && e > 30
-                && !Field.hasParedeInFront(bot.getX(), bot.getY(), bot.getDir(), o.distanciaInimigoFrente)) {
+                && !Field.temParedeNaFrente(bot.getX(), bot.getY(), bot.getDir(), o.distanciaInimigoFrente)) {
             return State.ATACAR;
         }
 
@@ -168,7 +170,7 @@ public class AI {
         }
 
         // verificando coletar
-        if (Field.hasOuro() && Field.hasOuroParaColetar(bot.getX(), bot.getY(), bot.getDir(), bot.getTick())) {
+        if (Field.temOuro() && Field.temOuroParaColetar(bot.getX(), bot.getY(), bot.getDir())) {
             return State.COLETAR;
         }
 
@@ -177,24 +179,23 @@ public class AI {
     }
 
     /**
-     * Calcula as ações para o estado ATACAR
+     * Calcula as ações para o estado ATAQUE
      * Neste caso, atira uma vez
      */
-    private void doAtacar() {
+    private void fazerAtaque() {
         ticksAtacando += 1;
-        acaoAtual = Action.SHOOT;
+        acaoAtual = Action.ATIRAR;
     }
 
     /**
      * Calcula as ações para o estado FUGIR
      * Define o tickFugir para 5 (ou seja, ele vai executar pelo menos 5 acoes)
      *
-     * Caso tome dano sem ter inimigo perto, fugir para algum bloco exceto
-     *      tras, esquerda ou direita
-     * Caso tenha um inimigo a sua volta, fugir do quadrado 3x3 que ele esta
+     * Caso tome dano sem ter inimigo perto, fugir da linha de visão dele
+     * Caso tenha um inimigo a sua volta, virar
      * Caso tenha um inimigo a sua frente, fugir da linha de visão dele
      */
-    private void doFugir() {
+    private void fazerFugir() {
         Path caminho = null, temp;
 
         Observation o = bot.getUltimaObservacao();
@@ -211,7 +212,7 @@ public class AI {
         if (o.isInimigo) {
             // area = Field.coords5x5Around(bot.getX(), bot.getY());
             // simplesmente olha para o lado
-            acaoAtual = Action.LEFT;
+            acaoAtual = Action.ESQUERDA;
             return;
 
         }
@@ -223,10 +224,10 @@ public class AI {
         // limpando coords impossiveis
         for (int[] coord: area) {
             if ((Field.get(coord[0], coord[1]) == Position.PAREDE)
-                    || (Field.get(coord[0], coord[1])) == Position.DANGER) {
+                    || (Field.get(coord[0], coord[1])) == Position.PERIGO) {
                 continue;
             }
-            temp = Field.aStar(bot.getX(), bot.getY(), bot.getDir(), coord[0], coord[1]);
+            temp = Field.aEstrela(bot.getX(), bot.getY(), bot.getDir(), coord[0], coord[1]);
             if (temp == null) { continue; }
             if (caminho == null || caminho.tamanho > temp.tamanho) {
                 caminho = temp;
@@ -235,7 +236,7 @@ public class AI {
 
         // passando a primeira acao
         if (caminho == null) {
-            doAtacar();     // se defende se nao tem como fugir
+            fazerAtaque();     // se defende se nao tem como fugir
         } else {
             pathAtual = caminho;
             acaoAtual = pathAtual.acoes[0];
@@ -246,16 +247,16 @@ public class AI {
      * Calcula as ações para o estado COLETAR
      * Vai no caminho mais rapido para um OURO
      */
-    private void doColetar() {
+    private void fazerColetar() {
         if (this.bot.getUltimaObservacao().isTesouro) {
-            acaoAtual = Action.TAKE;
+            acaoAtual = Action.PEGAR;
             return;
         }
 
-        if (estadoAnterior == State.COLETAR && !Field.mapaMudou && pathAtual.tamanho > 1) {
+        // buffer
+        if (this.pathAtual != null && estadoAnterior == State.COLETAR && !this.mapaMudou && pathAtual.tamanho > 1) {
             pathAtual.removerPrimeiraAcao();
             acaoAtual = pathAtual.acoes[0];
-            // System.out.println(Arrays.toString(pathAtual.acoes));
             return;
         }
 
@@ -264,7 +265,7 @@ public class AI {
         //  System.out.println(Arrays.toString(pathAtual.acoes));
 
         if (pathAtual == null ) {
-            acaoAtual = Action.NONE;
+            acaoAtual = Action.NADA;
         } else {
             acaoAtual =  pathAtual.acoes[0];
         }
@@ -275,56 +276,63 @@ public class AI {
      * Caso tenha um powerup para coletar, siga até ele.
      * Se não, se tiver algum powerup, explora em volta dele
      * Se não tiver powerup, explora
+     *
+     * PROBLEMA CONHECIDO: se aparecer um powerup enquanto ele explora, ele continuará explorando
+     * até acabar aquele quadrado, e só depois irá para o powerup
      */
-    private void doRecarregar() {
+    private void fazerRecarregar() {
         if (this.bot.getUltimaObservacao().isPowerup) {
-            acaoAtual = Action.TAKE;
+            acaoAtual = Action.PEGAR;
             return;
         }
 
+        if (Field.temPowerupParaColetar(bot.getX(), bot.getY(), bot.getDir()) && !indoParaPowerup) {
+            this.mapaMudou = true;      // forca a recarregar o buffer
+        }
+
         // cache
-        if (estadoAnterior == State.RECARREGAR && !Field.mapaMudou && pathAtual.tamanho > 1) {
+        if (this.pathAtual != null && estadoAnterior == State.RECARREGAR && !this.mapaMudou && pathAtual.tamanho > 1) {
             pathAtual.removerPrimeiraAcao();
             acaoAtual = pathAtual.acoes[0];
             return;
         }
 
         // procurando algum powerup pronto
-        if (Field.hasPowerupParaColetar(bot.getX(), bot.getY(), bot.getDir(), bot.getTick())) {
+        if (Field.temPowerupParaColetar(bot.getX(), bot.getY(), bot.getDir())) {
             // pega o path que tem no buffer dele
+            indoParaPowerup = true;
             pathAtual = Field.getBufferPath();
             acaoAtual = pathAtual.acoes[0];
             return;
         }
         // procurando algum powerup para explorar em volta
-        if (Field.hasPowerup()) {
-
-            int []dest = Field.powerupMaisProximo(bot.getX(), bot.getY(), bot.getDir());
+        if (Field.temPowerup()) {
+            int []dest = Field.powerupMaisPerto(bot.getX(), bot.getY(), bot.getDir());
             if (dest != null) {
                 int xx = dest[0];
                 int yy = dest[1];
                 dest = Field.melhorBlocoUsandoPontoFocal(bot.getX(), bot.getY(),bot.getDir(), xx, yy);
-                pathAtual = Field.aStar(bot.getX(), bot.getY(), bot.getDir(), dest[0], dest[1]);
+                pathAtual = Field.aEstrela(bot.getX(), bot.getY(), bot.getDir(), dest[0], dest[1]);
                 if (pathAtual != null) acaoAtual = pathAtual.acoes[0];
+                indoParaPowerup = false;
             } else {
                 // algo bugou?
-                System.out.println("RECARREGAR BUG!");
-                doExplorar();
+                System.out.println("RECARREGAR BUG?");
+                fazerExplorar();
             }
         }
         // caso tudo de errado, ou nao tenha powerups
         else {
-            doExplorar();
+            fazerExplorar();
         }
     }
 
     /**
      * Calcula as ações para o estado EXPLORAR
-     * Explicado no README.md
      */
-    private void doExplorar() {
+    private void fazerExplorar() {
 
-        if (estadoAnterior == State.EXPLORAR && !Field.mapaMudou && pathAtual.tamanho > 1) {
+        if (this.pathAtual != null && estadoAnterior == State.EXPLORAR && !this.mapaMudou && pathAtual.tamanho > 1) {
             // retirando a primeira ação do path e pegando a proxima
             pathAtual.removerPrimeiraAcao();
             acaoAtual = pathAtual.acoes[0];
@@ -337,10 +345,10 @@ public class AI {
         int[] pontoFocal = Field.pontoMedioOuro();
         int[] destino = Field.melhorBlocoUsandoPontoFocal(bot.getX(), bot.getY(), bot.getDir(), pontoFocal[0], pontoFocal[1]);
 
-        pathAtual = Field.aStar(bot.getX(), bot.getY(), bot.getDir(), destino[0], destino[1]);
+        pathAtual = Field.aEstrela(bot.getX(), bot.getY(), bot.getDir(), destino[0], destino[1]);
 
         if (pathAtual == null) {
-            acaoAtual = Action.NONE;
+            acaoAtual = Action.NADA;
         }
         else {
             // System.out.println(Arrays.toString(pathAtual.acoes));

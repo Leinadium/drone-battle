@@ -39,7 +39,7 @@ class Node {
     public PlayerInfo.Direction dir;
     public Node(int x, int y, PlayerInfo.Direction dir) {
         this.x = x; this.y = y; this.dir = dir; ehAtras = false;
-        this.ehSafe = Field.get(x, y) == Position.SAFE;
+        this.ehSafe = Field.get(x, y) == Position.SEGURO;
     }
     public Node(int x, int y, PlayerInfo.Direction dir, boolean ehAtras) {
         this.x = x; this.y = y; this.dir = dir; this.ehAtras = ehAtras;
@@ -81,7 +81,7 @@ class Node {
             x = ret[i].x;
             y = ret[i].y;
             Position tipo = Field.get(x, y);
-            if (tipo == Position.DANGER || tipo == Position.PAREDE || tipo == Position.UNKNOWN) {
+            if (tipo == Position.PERIGO || tipo == Position.PAREDE || tipo == Position.DESCONHECIDO) {
                 ret[i] = null;
             }
         }
@@ -97,31 +97,31 @@ class Node {
             if (atual.dir == anterior.dir) {
                 switch (atual.dir) {
                     case north -> {
-                        if (atual.y > anterior.y) { acoes.add(0, Action.BACK); } else { acoes.add(0, Action.FRONT); }
+                        if (atual.y > anterior.y) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
                     }
                     case south -> {
-                        if (atual.y < anterior.y) { acoes.add(0, Action.BACK); } else { acoes.add(0, Action.FRONT); }
+                        if (atual.y < anterior.y) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
                     }
                     case west -> {
-                        if (atual.x > anterior.x) { acoes.add(0, Action.BACK); } else { acoes.add(0, Action.FRONT); }
+                        if (atual.x > anterior.x) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
                     }
                     case east -> {
-                        if (atual.x < anterior.x) { acoes.add(0, Action.BACK); } else { acoes.add(0, Action.FRONT); }
+                        if (atual.x < anterior.x) { acoes.add(0, Action.TRAS); } else { acoes.add(0, Action.FRENTE); }
                     }
                 }
             } else {
                 switch (atual.dir) {
                     case north -> {
-                        if (anterior.dir == PlayerInfo.Direction.east) {acoes.add(0, Action.LEFT);} else { acoes.add(0, Action.RIGHT);}
+                        if (anterior.dir == PlayerInfo.Direction.east) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
                     }
                     case south -> {
-                        if (anterior.dir == PlayerInfo.Direction.west) {acoes.add(0, Action.LEFT);} else { acoes.add(0, Action.RIGHT);}
+                        if (anterior.dir == PlayerInfo.Direction.west) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
                     }
                     case east -> {
-                        if (anterior.dir == PlayerInfo.Direction.south) {acoes.add(0, Action.LEFT);} else { acoes.add(0, Action.RIGHT);}
+                        if (anterior.dir == PlayerInfo.Direction.south) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
                     }
                     case west -> {
-                        if (anterior.dir == PlayerInfo.Direction.north) {acoes.add(0, Action.LEFT);} else { acoes.add(0, Action.RIGHT);}
+                        if (anterior.dir == PlayerInfo.Direction.north) {acoes.add(0, Action.ESQUERDA);} else { acoes.add(0, Action.DIREITA);}
                     }
                 }
             }
