@@ -8,8 +8,8 @@ public class Config {
     public static final String url = "atari.icad.puc-rio.br";
     // public static final String urlTeste = "atari.icad.puc-rio.br";
     public static final int timerLento = 1000;
-    public static final int timerNormal = 180;
-    public static final int timerMinimo = 100;
+    public static final int timerNormal = 200;
+    public static final int timerMinimo = 200;
     public static final Color corDefault = new Color(23, 179, 132);
     public static final int tempoSpawn = 15000 + 2 * timerNormal;
 
