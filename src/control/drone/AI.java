@@ -83,9 +83,16 @@ public class AI {
         if (o.isDano) {
             Field.setPosicaoInsegura(x, y);
             Field.setPosicaoInsegura(x - 1, y);
+            Field.setPosicaoInsegura(x - 2, y);
+
             Field.setPosicaoInsegura(x + 1, y);
+            Field.setPosicaoInsegura(x + 2, y);
+
             Field.setPosicaoInsegura(x, y - 1);
+            Field.setPosicaoInsegura(x, y - 2);
+
             Field.setPosicaoInsegura(x, y + 1);
+            Field.setPosicaoInsegura(x, y + 2);
         }
 
         if (o.isFlash || o.isBuraco) {
@@ -254,7 +261,7 @@ public class AI {
         }
 
         // buffer
-        if (this.pathAtual != null && estadoAnterior == State.COLETAR && !this.mapaMudou && pathAtual.tamanho > 1) {
+        if (this.pathAtual != null &&  estadoAnterior == State.COLETAR && !this.mapaMudou && pathAtual.tamanho > 1) {
             pathAtual.removerPrimeiraAcao();
             acaoAtual = pathAtual.acoes[0];
             return;
