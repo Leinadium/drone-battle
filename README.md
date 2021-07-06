@@ -66,11 +66,11 @@ Além disso, caso o drone tenha recebido um dano ou ter um inimigo na sua frente
 algum bloco nas suas laterais para sair do campo de visão. Os blocos consultados são os seguintes:
 
 ```text
-00.00 
-00.00
-00x00  onde o x é o drone, e 0 são os blocos procurados
-00.00
-00.00
+00...00 
+00...00
+00.x.00  onde o x é o drone, e 0 são os blocos procurados
+00...00
+00...00
 ```
 
 Caso só haja um inimigo por perto, o drone irá virar para a esquerda, tentando encontrar o inimigo.
@@ -103,6 +103,10 @@ em que *pontoFocal* é o bloco de spawn do drone, ou o ponto médio dos ouros co
 de movimentos que o drone deve fazer para chegar naquele bloco.
 
 ## Pathfinding
+
+O algoritmo de pathfinding foi o responsável de fazer toda a movimentação do drone, em todos os estados. Seja ao explorar,
+fugir ou recarregar. Tanto o ataque (atirar) como a fuga de algum inimigo por perto (girar para a esquerda) eram as únicas
+ações que o pathfinding não era responsável.
 
 O algoritmo de *pathfinding* é o [A*](https://en.wikipedia.org/wiki/A*_search_algorithm), com algumas alterações:
 
